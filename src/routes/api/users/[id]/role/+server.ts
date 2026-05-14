@@ -1,5 +1,6 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
+import { createServiceRoleClient } from '$lib/server/supabase'; 
 
 const VALID_ROLES = ['user', 'staff', 'moderator', 'admin'];
 
@@ -43,15 +44,17 @@ export const POST: RequestHandler = async ({ params, request, locals }) => {
 			return json({ message: 'Moderators cannot modify admins or other moderators.' }, { status: 403 });
 		}
 	}
-
-	const { data, error } = await locals.supabase
-		.from('profiles')
-		.update({ role })
-		.eq('id', params.id)
-		.select('id, name, role, created_at')
-
-	if (error) return json({ message: error.message }, { status: 500 });
-	if (!data || data.length === 0) return json({ message: 'User not found' }, { status: 404 });
-
-	return json(data[0]);
+	const serviceClient = createServiceRoleClient();
+ if (!serviceClient) return json({ message: 'Service role not configured.' }, { status: 500 });
+ 
+ const { data, error } = await serviceClient
+     .from('profiles')
+     .update({ role })
+     .eq('id', params.id)
+     .select('id, name, role, created_at')
+     .single();
+ 
+ if (error) return json({ message: error.message }, { status: 500 });
+ 
+ return json(data);
 };
