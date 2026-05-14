@@ -49,9 +49,9 @@ export const POST: RequestHandler = async ({ params, request, locals }) => {
 		.update({ role })
 		.eq('id', params.id)
 		.select('id, name, role, created_at')
-		.single();
 
 	if (error) return json({ message: error.message }, { status: 500 });
+	if (!data || data.length === 0) return json({ message: 'User not found' }, { status: 404 });
 
-	return json(data);
+	return json(data[0]);
 };
