@@ -193,9 +193,7 @@
 <main class="mx-auto max-w-6xl px-4 py-12">
 	<div class="flex flex-wrap items-start justify-between gap-4">
 		<div class="max-w-3xl">
-			<h1 class="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl">
-				Manage Books
-			</h1>
+			<h1 class="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl">Manage Books</h1>
 			<p class="mt-4 text-sm leading-6 text-gray-500">
 				Add titles, refine metadata, and keep circulation-ready inventory clean and searchable.
 			</p>
@@ -234,49 +232,86 @@
 				</p>
 			</div>
 			<div class="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-6">
-				<input
-					type="text"
-					bind:value={title}
-					placeholder="Title"
-					class="rounded-xl border-0 bg-gray-50/80 px-4 py-3 text-sm ring-1 ring-black/[0.06] transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] outline-none placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-[#1B6B3A]/30 xl:col-span-2"
-				/>
-				<input
-					type="text"
-					bind:value={author}
-					placeholder="Author"
-					class="rounded-xl border-0 bg-gray-50/80 px-4 py-3 text-sm ring-1 ring-black/[0.06] transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] outline-none placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-[#1B6B3A]/30 xl:col-span-1"
-				/>
-				<input
-					type="text"
-					bind:value={serialNo}
-					placeholder="Serial No."
-					class="rounded-xl border-0 bg-gray-50/80 px-4 py-3 text-sm ring-1 ring-black/[0.06] transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] outline-none placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-[#1B6B3A]/30 xl:col-span-1"
-				/>
-				<select
-					bind:value={category}
-					class="rounded-xl border-0 bg-gray-50/80 px-4 py-3 text-sm ring-1 ring-black/[0.06] transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] outline-none focus:bg-white focus:ring-2 focus:ring-[#1B6B3A]/30 xl:col-span-1"
-				>
-					<option value="">Category (optional)</option>
-					{#each GENRES as genre (genre)}
-						<option value={genre}>{genre}</option>
-					{/each}
-				</select>
-				<div class="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] xl:col-span-1">
+				<div class="space-y-1.5 xl:col-span-1">
+					<label
+						for="book-title"
+						class="text-xs font-semibold tracking-wide text-gray-500 uppercase">Title</label
+					>
 					<input
+						id="book-title"
+						type="text"
+						bind:value={title}
+						placeholder="Enter book title"
+						class="w-full rounded-xl border-0 bg-gray-50/80 px-4 py-3 text-sm ring-1 ring-black/[0.06] transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] outline-none placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-[#1B6B3A]/30"
+					/>
+				</div>
+				<div class="space-y-1.5 xl:col-span-1">
+					<label
+						for="book-author"
+						class="text-xs font-semibold tracking-wide text-gray-500 uppercase">Author</label
+					>
+					<input
+						id="book-author"
+						type="text"
+						bind:value={author}
+						placeholder="Enter author name"
+						class="w-full rounded-xl border-0 bg-gray-50/80 px-4 py-3 text-sm ring-1 ring-black/[0.06] transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] outline-none placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-[#1B6B3A]/30"
+					/>
+				</div>
+				<div class="space-y-1.5 xl:col-span-1">
+					<label
+						for="book-serial"
+						class="text-xs font-semibold tracking-wide text-gray-500 uppercase">Serial No.</label
+					>
+					<input
+						id="book-serial"
+						type="text"
+						bind:value={serialNo}
+						placeholder="Enter serial number"
+						class="w-full rounded-xl border-0 bg-gray-50/80 px-4 py-3 text-sm ring-1 ring-black/[0.06] transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] outline-none placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-[#1B6B3A]/30"
+					/>
+				</div>
+				<div class="space-y-1.5 xl:col-span-1">
+					<label
+						for="book-category"
+						class="text-xs font-semibold tracking-wide text-gray-500 uppercase">Category</label
+					>
+					<select
+						id="book-category"
+						bind:value={category}
+						class="w-full rounded-xl border-0 bg-gray-50/80 px-4 py-3 text-sm ring-1 ring-black/[0.06] transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] outline-none focus:bg-white focus:ring-2 focus:ring-[#1B6B3A]/30"
+					>
+						<option value="">Category (optional)</option>
+						{#each GENRES as genre (genre)}
+							<option value={genre}>{genre}</option>
+						{/each}
+					</select>
+				</div>
+				<div class="space-y-1.5 xl:col-span-1">
+					<label
+						for="book-copies"
+						class="text-xs font-semibold tracking-wide text-gray-500 uppercase">Copies</label
+					>
+					<input
+						id="book-copies"
 						type="number"
 						bind:value={copies}
 						min="1"
-						placeholder="Copies"
-						class="rounded-xl border-0 bg-gray-50/80 px-4 py-3 text-sm ring-1 ring-black/[0.06] transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] outline-none placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-[#1B6B3A]/30"
+						class="w-full rounded-xl border-0 bg-gray-50/80 px-3 py-3 text-sm ring-1 ring-black/[0.06] transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] outline-none focus:bg-white focus:ring-2 focus:ring-[#1B6B3A]/30"
 					/>
-					<button
-						type="button"
-						onclick={addBook}
-						disabled={adding}
-						class="rounded-full bg-[#1B6B3A] px-5 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-[#155A2F] hover:shadow-md active:scale-[0.98] disabled:opacity-60"
-						>{adding ? 'Adding…' : 'Add Book'}</button
-					>
 				</div>
+				<button
+					type="button"
+					onclick={addBook}
+					disabled={adding ||
+						!title.trim() ||
+						!author.trim() ||
+						!serialNo.trim() ||
+						!Number.isFinite(copies) ||
+						copies < 1}
+					class="self-end rounded-full bg-[#1B6B3A] px-5 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-[#155A2F] hover:shadow-md active:scale-[0.98] disabled:opacity-60 xl:col-span-1"
+					>{adding ? 'Adding…' : 'Add Book'}</button
+				>
 			</div>
 		</div>
 	</div>
@@ -299,21 +334,33 @@
 		class="mt-6 rounded-[2rem] bg-white/60 p-1.5 shadow-[0_8px_40px_rgba(0,0,0,0.04)] ring-1 ring-black/[0.04]"
 	>
 		<div class="rounded-[calc(2rem-0.375rem)] bg-white p-5 sm:p-6">
-			<div class="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
-				<input
-					type="text"
-					bind:value={query}
-					placeholder="Search by title, author, or serial…"
-					class="rounded-xl border-0 bg-gray-50/80 px-4 py-3 text-sm ring-1 ring-black/[0.06] transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] outline-none placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-[#1B6B3A]/30"
-				/>
+			<form
+				class="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]"
+				onsubmit={(event) => {
+					event.preventDefault();
+					search();
+				}}
+			>
+				<div class="space-y-1.5">
+					<label
+						for="books-search"
+						class="text-xs font-semibold tracking-wide text-gray-500 uppercase">Search books</label
+					>
+					<input
+						id="books-search"
+						type="text"
+						bind:value={query}
+						placeholder="Search by title, author, or serial"
+						class="w-full rounded-xl border-0 bg-gray-50/80 px-4 py-3 text-sm ring-1 ring-black/[0.06] transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] outline-none placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-[#1B6B3A]/30"
+					/>
+				</div>
 				<button
-					type="button"
-					onclick={search}
+					type="submit"
 					disabled={loading}
-					class="rounded-full bg-[#1B6B3A] px-6 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-[#155A2F] hover:shadow-md active:scale-[0.98] disabled:opacity-60"
+					class="self-end rounded-full bg-[#1B6B3A] px-6 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-[#155A2F] hover:shadow-md active:scale-[0.98] disabled:opacity-60"
 					>{loading ? 'Searching…' : 'Search'}</button
 				>
-			</div>
+			</form>
 		</div>
 	</div>
 
