@@ -224,23 +224,170 @@
 					class="rounded-full bg-[#1B6B3A] px-6 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-[#155A2F] hover:shadow-md active:scale-[0.98] disabled:opacity-60"
 					>{loading ? 'Loading…' : 'Search'}</button
 				>
-				<button
-					type="button"
-					onclick={downloadCsv}
-					disabled={downloadingCsv || downloadingExcel}
-					class="rounded-full bg-white px-5 py-3 text-sm font-medium text-gray-700 ring-1 ring-black/[0.08] transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-gray-50 hover:ring-black/[0.12] active:scale-[0.98] disabled:opacity-60"
-					>{downloadingCsv ? 'Exporting…' : 'Download CSV'}</button
-				>
-				<button
-					type="button"
-					onclick={downloadExcel}
-					disabled={downloadingCsv || downloadingExcel}
-					class="rounded-full bg-white px-5 py-3 text-sm font-medium text-gray-700 ring-1 ring-black/[0.08] transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-gray-50 hover:ring-black/[0.12] active:scale-[0.98] disabled:opacity-60"
-					>{downloadingExcel ? 'Exporting…' : 'Download Excel'}</button
-				>
 			</div>
 		</div>
 	</div>
+
+	{#if message}
+		<p
+			class={`mt-4 rounded-2xl px-4 py-3 text-sm ring-1 ${messageType === 'success' ? 'bg-green-50 text-green-700 ring-green-100' : 'bg-red-50 text-red-600 ring-red-100'}`}
+		>
+			{message}
+		</p>
+	{/if}
+
+	{#if searched}
+		<section
+			class="mt-6 rounded-[2rem] bg-white/60 p-1.5 shadow-[0_8px_40px_rgba(0,0,0,0.04)] ring-1 ring-black/[0.04]"
+		>
+			<div class="rounded-[calc(2rem-0.375rem)] bg-white p-6 text-gray-900 sm:p-8">
+				<div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+					<div>
+						<h2 class="text-2xl font-bold tracking-tight">Borrow Records</h2>
+						<p class="mt-2 text-sm text-gray-500">
+							{#if loading}
+								Loading records for the selected filters.
+							{:else}
+								Showing {records.length}
+								{records.length === 1 ? 'record' : 'records'} for the current filters.
+							{/if}
+						</p>
+					</div>
+					<div class="flex flex-wrap gap-3">
+						<button
+							type="button"
+							onclick={downloadCsv}
+							disabled={downloadingCsv || downloadingExcel || loading}
+							class="rounded-full bg-white px-5 py-2.5 text-sm font-medium text-gray-700 ring-1 ring-black/[0.08] transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-gray-50 hover:ring-black/[0.12] active:scale-[0.98] disabled:opacity-60"
+							>{downloadingCsv ? 'Exporting…' : 'Download CSV'}</button
+						>
+						<button
+							type="button"
+							onclick={downloadExcel}
+							disabled={downloadingCsv || downloadingExcel || loading}
+							class="rounded-full bg-white px-5 py-2.5 text-sm font-medium text-gray-700 ring-1 ring-black/[0.08] transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-gray-50 hover:ring-black/[0.12] active:scale-[0.98] disabled:opacity-60"
+							>{downloadingExcel ? 'Exporting…' : 'Download Excel'}</button
+						>
+					</div>
+				</div>
+
+				{#if loading}
+					<div
+						class="mt-6 rounded-3xl bg-gray-50 px-4 py-10 text-center text-sm text-gray-500 ring-1 ring-black/[0.04]"
+					>
+						Loading borrow records…
+					</div>
+				{:else if records.length === 0}
+					<div
+						class="mt-6 rounded-3xl bg-gray-50 px-4 py-10 text-center text-sm text-gray-500 ring-1 ring-black/[0.04]"
+					>
+						<p class="font-semibold text-gray-900">No borrow records found</p>
+						<p class="mt-2">Try widening the filters or removing the date range.</p>
+					</div>
+				{:else}
+					<div class="mt-6 overflow-x-auto rounded-[1.75rem] ring-1 ring-black/[0.04]">
+						<table class="w-full text-sm text-gray-900">
+							<thead>
+								<tr class="border-b border-gray-100 bg-gray-50/50">
+									<th
+										class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
+										>Borrower</th
+									>
+									<th
+										class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
+										>Book</th
+									>
+									<th
+										class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
+										>Borrowed</th
+									>
+									<th
+										class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
+										>Due Date</th
+									>
+									<th
+										class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
+										>Returned</th
+									>
+									<th
+										class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
+										>Status</th
+									>
+									<th
+										class="px-6 py-4 text-right text-xs font-semibold tracking-wider text-gray-400 uppercase"
+									></th>
+								</tr>
+							</thead>
+							<tbody class="divide-y divide-gray-50">
+								{#each records as record (record.id)}
+									<tr
+										class={`transition-colors duration-200 hover:bg-gray-50/50 ${isOverdue(record) ? 'bg-red-50/50' : ''}`}
+									>
+										<td class="px-6 py-4 font-semibold text-gray-900"
+											>{record.profiles?.name ?? '—'}</td
+										>
+										<td class="px-6 py-4">
+											<p class="font-semibold text-gray-900">{record.books?.title ?? '—'}</p>
+											<p class="mt-1 text-xs text-gray-400">{record.books?.serial_no ?? ''}</p>
+										</td>
+										<td class="px-6 py-4 text-gray-600">{formatDate(record.borrowed_at)}</td>
+										<td class="px-6 py-4">
+											{#if record.due_date}
+												<span
+													class={isOverdue(record) ? 'font-semibold text-red-600' : 'text-gray-600'}
+												>
+													{formatDate(record.due_date)}
+													{#if isOverdue(record)}
+														<span
+															class="ml-2 rounded-full bg-red-50 px-2 py-1 text-[10px] font-semibold tracking-[0.18em] text-red-600 uppercase ring-1 ring-red-100"
+															>Late</span
+														>
+													{/if}
+												</span>
+											{:else}
+												<span class="text-gray-400">—</span>
+											{/if}
+										</td>
+										<td class="px-6 py-4 text-gray-600"
+											>{record.returned_at ? formatDate(record.returned_at) : '—'}</td
+										>
+										<td class="px-6 py-4">
+											{#if record.returned_at}
+												<span
+													class="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-500 ring-1 ring-black/[0.04]"
+													>{record.force_returned ? 'Force Returned' : 'Returned'}</span
+												>
+											{:else if isOverdue(record)}
+												<span
+													class="rounded-full bg-red-50 px-3 py-1 text-xs font-medium text-red-700 ring-1 ring-red-100"
+													>Overdue</span
+												>
+											{:else}
+												<span
+													class="rounded-full bg-[#E8F5EC] px-3 py-1 text-xs font-medium text-[#1B6B3A] ring-1 ring-[#1B6B3A]/10"
+													>Active</span
+												>
+											{/if}
+										</td>
+										<td class="px-6 py-4 text-right">
+											{#if !record.returned_at}
+												<button
+													onclick={() => forceReturn(record.id)}
+													disabled={forceReturningId === record.id}
+													class="rounded-full bg-[#E8F5EC] px-4 py-2 text-xs font-medium text-[#1B6B3A] ring-1 ring-[#1B6B3A]/10 transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-[#DCEEE2] active:scale-[0.98] disabled:opacity-50"
+													>{forceReturningId === record.id ? 'Returning…' : 'Force Return'}</button
+												>
+											{/if}
+										</td>
+									</tr>
+								{/each}
+							</tbody>
+						</table>
+					</div>
+				{/if}
+			</div>
+		</section>
+	{/if}
 
 	<section
 		class="mt-10 rounded-[2rem] bg-white/60 p-1.5 shadow-[0_8px_40px_rgba(0,0,0,0.04)] ring-1 ring-black/[0.04]"
@@ -337,131 +484,4 @@
 			{/if}
 		</div>
 	</section>
-
-	{#if message}
-		<p
-			class={`mt-4 rounded-2xl px-4 py-3 text-sm ring-1 ${messageType === 'success' ? 'bg-green-50 text-green-700 ring-green-100' : 'bg-red-50 text-red-600 ring-red-100'}`}
-		>
-			{message}
-		</p>
-	{/if}
-
-	{#if searched}
-		{#if records.length === 0}
-			<div
-				class="mt-6 rounded-[2rem] bg-white/60 p-1.5 shadow-[0_8px_40px_rgba(0,0,0,0.04)] ring-1 ring-black/[0.04]"
-			>
-				<div class="rounded-[calc(2rem-0.375rem)] bg-white px-8 py-12 text-center text-gray-900">
-					<p class="text-lg font-semibold">No borrow records found</p>
-					<p class="mt-2 text-sm text-gray-500">
-						Try widening the filters or removing the date range.
-					</p>
-				</div>
-			</div>
-		{:else}
-			<div
-				class="mt-6 rounded-[2rem] bg-white/60 p-1.5 shadow-[0_8px_40px_rgba(0,0,0,0.04)] ring-1 ring-black/[0.04]"
-			>
-				<div class="overflow-x-auto rounded-[calc(2rem-0.375rem)] bg-white">
-					<table class="w-full text-sm text-gray-900">
-						<thead>
-							<tr class="border-b border-gray-100 bg-gray-50/50">
-								<th
-									class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
-									>Borrower</th
-								>
-								<th
-									class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
-									>Book</th
-								>
-								<th
-									class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
-									>Borrowed</th
-								>
-								<th
-									class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
-									>Due Date</th
-								>
-								<th
-									class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
-									>Returned</th
-								>
-								<th
-									class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
-									>Status</th
-								>
-								<th
-									class="px-6 py-4 text-right text-xs font-semibold tracking-wider text-gray-400 uppercase"
-								></th>
-							</tr>
-						</thead>
-						<tbody class="divide-y divide-gray-50">
-							{#each records as record (record.id)}
-								<tr
-									class={`transition-colors duration-200 hover:bg-gray-50/50 ${isOverdue(record) ? 'bg-red-50/50' : ''}`}
-								>
-									<td class="px-6 py-4 font-semibold text-gray-900"
-										>{record.profiles?.name ?? '—'}</td
-									>
-									<td class="px-6 py-4">
-										<p class="font-semibold text-gray-900">{record.books?.title ?? '—'}</p>
-										<p class="mt-1 text-xs text-gray-400">{record.books?.serial_no ?? ''}</p>
-									</td>
-									<td class="px-6 py-4 text-gray-600">{formatDate(record.borrowed_at)}</td>
-									<td class="px-6 py-4">
-										{#if record.due_date}
-											<span
-												class={isOverdue(record) ? 'font-semibold text-red-600' : 'text-gray-600'}
-											>
-												{formatDate(record.due_date)}
-												{#if isOverdue(record)}
-													<span
-														class="ml-2 rounded-full bg-red-50 px-2 py-1 text-[10px] font-semibold tracking-[0.18em] text-red-600 uppercase ring-1 ring-red-100"
-														>Late</span
-													>
-												{/if}
-											</span>
-										{:else}
-											<span class="text-gray-400">—</span>
-										{/if}
-									</td>
-									<td class="px-6 py-4 text-gray-600"
-										>{record.returned_at ? formatDate(record.returned_at) : '—'}</td
-									>
-									<td class="px-6 py-4">
-										{#if record.returned_at}
-											<span
-												class="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-500 ring-1 ring-black/[0.04]"
-												>{record.force_returned ? 'Force Returned' : 'Returned'}</span
-											>
-										{:else if isOverdue(record)}
-											<span
-												class="rounded-full bg-red-50 px-3 py-1 text-xs font-medium text-red-700 ring-1 ring-red-100"
-												>Overdue</span
-											>
-										{:else}
-											<span
-												class="rounded-full bg-[#E8F5EC] px-3 py-1 text-xs font-medium text-[#1B6B3A] ring-1 ring-[#1B6B3A]/10"
-												>Active</span
-											>
-										{/if}
-									</td>
-									<td class="px-6 py-4 text-right">
-										{#if !record.returned_at}
-											<button
-												onclick={() => forceReturn(record.id)}
-												disabled={forceReturningId === record.id}
-												class="rounded-full bg-[#E8F5EC] px-4 py-2 text-xs font-medium text-[#1B6B3A] ring-1 ring-[#1B6B3A]/10 transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-[#DCEEE2] active:scale-[0.98] disabled:opacity-50"
-												>{forceReturningId === record.id ? 'Returning…' : 'Force Return'}</button
-											>
-										{/if}
-									</td>
-								</tr>
-							{/each}
-						</tbody>
-					</table>
-				</div>
-			</div>
-		{/if}
-	{/if}
 </main>
