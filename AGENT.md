@@ -4,7 +4,7 @@ This file maps the codebase for future agent sessions. Load it before making cha
 
 ## Project Snapshot
 
-`lib-sys` is the SPCBA Library System: a SvelteKit 2 + Svelte 5 full-stack app for library authentication, book inventory, borrowing, reservations, notifications, reports, and role-based administration.
+The SPCBA Library System: a SvelteKit 2 + Svelte 5 full-stack app for library authentication, book inventory, borrowing, reservations, notifications, reports, and role-based administration.
 
 Core stack:
 

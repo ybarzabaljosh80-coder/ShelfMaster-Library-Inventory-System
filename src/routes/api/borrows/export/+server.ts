@@ -1,6 +1,18 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import * as XLSX from 'xlsx';
+import { createServiceRoleClient } from '$lib/server/supabase';
+
+type BorrowReportRecord = {
+	borrowed_at: string;
+	returned_at: string | null;
+	force_returned: boolean | null;
+	profiles: { name: string | null } | { name: string | null }[] | null;
+	books:
+		| { title: string | null; author: string | null; serial_no: string | null }
+		| { title: string | null; author: string | null; serial_no: string | null }[]
+		| null;
+};
 
 export const GET: RequestHandler = async ({ url, locals }) => {
 	if (!locals.user) return json({ message: 'Unauthorized' }, { status: 401 });
@@ -12,14 +24,20 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 		.single();
 
 	const staffRoles = ['admin', 'staff', 'moderator'];
-	if (!profile || !staffRoles.includes(profile.role)) return json({ message: 'Forbidden' }, { status: 403 });
+	if (!profile || !staffRoles.includes(profile.role))
+		return json({ message: 'Forbidden' }, { status: 403 });
+
+	const serviceClient = createServiceRoleClient();
+	if (!serviceClient) return json({ message: 'Service role not configured.' }, { status: 500 });
 
 	const from = url.searchParams.get('from') ?? '';
 	const to = url.searchParams.get('to') ?? '';
 
-	let query = locals.supabase
+	let query = serviceClient
 		.from('borrow_records')
-		.select('borrowed_at, returned_at, force_returned, profiles!borrow_records_user_id_fkey(name), books(title, author, serial_no)')
+		.select(
+			'borrowed_at, returned_at, force_returned, profiles!borrow_records_user_id_fkey(name), books(title, author, serial_no)'
+		)
 		.order('borrowed_at', { ascending: false });
 
 	if (from) query = query.gte('borrowed_at', from);
@@ -29,15 +47,20 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 
 	if (error) return json({ message: error.message }, { status: 500 });
 
-	const rows = (data ?? []).map((r: any) => ({
-		Borrower: r.profiles?.name ?? '',
-		'Book Title': r.books?.title ?? '',
-		Author: r.books?.author ?? '',
-		'Serial No': r.books?.serial_no ?? '',
-		'Borrowed At': new Date(r.borrowed_at).toLocaleDateString(),
-		'Returned At': r.returned_at ? new Date(r.returned_at).toLocaleDateString() : '',
-		'Force Returned': r.force_returned ? 'Yes' : 'No'
-	}));
+	const rows = ((data ?? []) as BorrowReportRecord[]).map((r) => {
+		const profile = Array.isArray(r.profiles) ? r.profiles[0] : r.profiles;
+		const book = Array.isArray(r.books) ? r.books[0] : r.books;
+
+		return {
+			Borrower: profile?.name ?? '',
+			'Book Title': book?.title ?? '',
+			Author: book?.author ?? '',
+			'Serial No': book?.serial_no ?? '',
+			'Borrowed At': new Date(r.borrowed_at).toLocaleDateString(),
+			'Returned At': r.returned_at ? new Date(r.returned_at).toLocaleDateString() : '',
+			'Force Returned': r.force_returned ? 'Yes' : 'No'
+		};
+	});
 
 	const ws = XLSX.utils.json_to_sheet(rows);
 	const wb = XLSX.utils.book_new();
