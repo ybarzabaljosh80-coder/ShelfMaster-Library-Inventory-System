@@ -31,6 +31,8 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 
 	const from = url.searchParams.get('from') ?? '';
 	const to = url.searchParams.get('to') ?? '';
+	const userFilter = url.searchParams.get('user') ?? '';
+	const bookFilter = url.searchParams.get('book') ?? '';
 
 	let query = serviceClient
 		.from('borrow_records')
@@ -41,12 +43,13 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 
 	if (from) query = query.gte('borrowed_at', from);
 	if (to) query = query.lte('borrowed_at', to + 'T23:59:59.999Z');
+	if (userFilter) query = query.ilike('profiles.name', `%${userFilter}%`);
+	if (bookFilter) query = query.ilike('books.title', `%${bookFilter}%`);
 
 	const { data, error } = await query;
 
 	if (error) return json({ message: error.message }, { status: 500 });
 
-	// Build CSV
 	const headers = [
 		'Borrower',
 		'Book Title',

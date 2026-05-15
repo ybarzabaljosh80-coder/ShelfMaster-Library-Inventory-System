@@ -24,6 +24,8 @@
 	let reservations = $state<ReservationRecord[]>([]);
 	let loading = $state(false);
 	let reservationLoading = $state(false);
+	let downloadingCsv = $state(false);
+	let downloadingExcel = $state(false);
 	let searched = $state(false);
 	let reservationsOpen = $state(true);
 	let forceReturningId = $state<string | null>(null);
@@ -35,19 +37,22 @@
 	let fromDate = $state('');
 	let toDate = $state('');
 
-	async function search() {
-		loading = true;
-		searched = true;
-		message = '';
-
+	function buildBorrowParams() {
 		// eslint-disable-next-line svelte/prefer-svelte-reactivity
 		const params = new URLSearchParams();
 		if (userFilter) params.set('user', userFilter);
 		if (bookFilter) params.set('book', bookFilter);
 		if (fromDate) params.set('from', fromDate);
 		if (toDate) params.set('to', toDate);
+		return params;
+	}
 
-		const res = await fetch(`/api/borrows?${params}`);
+	async function search() {
+		loading = true;
+		searched = true;
+		message = '';
+
+		const res = await fetch(`/api/borrows?${buildBorrowParams()}`);
 		const data = await res.json();
 		loading = false;
 
@@ -58,6 +63,57 @@
 		} else {
 			records = data;
 		}
+	}
+
+	async function downloadFile(endpoint: string, filename: string, type: 'csv' | 'excel') {
+		if (type === 'csv') downloadingCsv = true;
+		if (type === 'excel') downloadingExcel = true;
+		message = '';
+
+		try {
+			const res = await fetch(`${endpoint}?${buildBorrowParams()}`);
+
+			if (!res.ok) {
+				const data = await res.json();
+				message = data.message || 'Failed to export borrow records.';
+				messageType = 'error';
+				return;
+			}
+
+			const blob = await res.blob();
+			const url = URL.createObjectURL(blob);
+			const a = document.createElement('a');
+			a.href = url;
+			a.download = filename;
+			document.body.appendChild(a);
+			a.click();
+			a.remove();
+			URL.revokeObjectURL(url);
+			message = 'Borrow report downloaded.';
+			messageType = 'success';
+		} catch {
+			message = 'An error occurred while exporting borrow records.';
+			messageType = 'error';
+		} finally {
+			if (type === 'csv') downloadingCsv = false;
+			if (type === 'excel') downloadingExcel = false;
+		}
+	}
+
+	function downloadCsv() {
+		void downloadFile(
+			'/api/borrows/export-csv',
+			`borrow-report-${new Date().toISOString().split('T')[0]}.csv`,
+			'csv'
+		);
+	}
+
+	function downloadExcel() {
+		void downloadFile(
+			'/api/borrows/export',
+			`borrow-records-${new Date().toISOString().split('T')[0]}.xlsx`,
+			'excel'
+		);
 	}
 
 	async function forceReturn(borrowId: string) {
@@ -136,7 +192,7 @@
 		class="mt-10 rounded-[2rem] bg-white/60 p-1.5 shadow-[0_8px_40px_rgba(0,0,0,0.04)] ring-1 ring-black/[0.04]"
 	>
 		<div class="rounded-[calc(2rem-0.375rem)] bg-white p-6 text-gray-900 sm:p-8">
-			<div class="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+			<div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
 				<input
 					type="text"
 					bind:value={userFilter}
@@ -159,6 +215,8 @@
 					bind:value={toDate}
 					class="rounded-xl border-0 bg-gray-50/80 px-4 py-3 text-sm ring-1 ring-black/[0.06] transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] outline-none focus:bg-white focus:ring-2 focus:ring-[#1B6B3A]/30"
 				/>
+			</div>
+			<div class="mt-4 flex flex-wrap gap-3">
 				<button
 					type="button"
 					onclick={search}
@@ -166,11 +224,27 @@
 					class="rounded-full bg-[#1B6B3A] px-6 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-[#155A2F] hover:shadow-md active:scale-[0.98] disabled:opacity-60"
 					>{loading ? 'Loading…' : 'Search'}</button
 				>
+				<button
+					type="button"
+					onclick={downloadCsv}
+					disabled={downloadingCsv || downloadingExcel}
+					class="rounded-full bg-white px-5 py-3 text-sm font-medium text-gray-700 ring-1 ring-black/[0.08] transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-gray-50 hover:ring-black/[0.12] active:scale-[0.98] disabled:opacity-60"
+					>{downloadingCsv ? 'Exporting…' : 'Download CSV'}</button
+				>
+				<button
+					type="button"
+					onclick={downloadExcel}
+					disabled={downloadingCsv || downloadingExcel}
+					class="rounded-full bg-white px-5 py-3 text-sm font-medium text-gray-700 ring-1 ring-black/[0.08] transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-gray-50 hover:ring-black/[0.12] active:scale-[0.98] disabled:opacity-60"
+					>{downloadingExcel ? 'Exporting…' : 'Download Excel'}</button
+				>
 			</div>
 		</div>
 	</div>
 
-	<section class="mt-10 rounded-[2rem] bg-white/60 p-1.5 shadow-[0_8px_40px_rgba(0,0,0,0.04)] ring-1 ring-black/[0.04]">
+	<section
+		class="mt-10 rounded-[2rem] bg-white/60 p-1.5 shadow-[0_8px_40px_rgba(0,0,0,0.04)] ring-1 ring-black/[0.04]"
+	>
 		<div class="rounded-[calc(2rem-0.375rem)] bg-white p-6 sm:p-8">
 			<div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 				<div>
@@ -190,11 +264,15 @@
 
 			{#if reservationsOpen}
 				{#if reservationLoading}
-					<div class="mt-6 rounded-3xl bg-gray-50 px-4 py-10 text-center text-sm text-gray-500 ring-1 ring-black/[0.04]">
+					<div
+						class="mt-6 rounded-3xl bg-gray-50 px-4 py-10 text-center text-sm text-gray-500 ring-1 ring-black/[0.04]"
+					>
 						Loading reservations…
 					</div>
 				{:else if reservations.length === 0}
-					<div class="mt-6 rounded-3xl bg-gray-50 px-4 py-10 text-center text-sm text-gray-500 ring-1 ring-black/[0.04]">
+					<div
+						class="mt-6 rounded-3xl bg-gray-50 px-4 py-10 text-center text-sm text-gray-500 ring-1 ring-black/[0.04]"
+					>
 						No active reservations right now.
 					</div>
 				{:else}
@@ -202,30 +280,54 @@
 						<table class="w-full text-sm text-gray-900">
 							<thead>
 								<tr class="border-b border-gray-100 bg-gray-50/60">
-									<th class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase">User</th>
-									<th class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase">Book</th>
-									<th class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase">Position</th>
-									<th class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase">Status</th>
-									<th class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase">Created</th>
-									<th class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase">Expires</th>
+									<th
+										class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
+										>User</th
+									>
+									<th
+										class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
+										>Book</th
+									>
+									<th
+										class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
+										>Position</th
+									>
+									<th
+										class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
+										>Status</th
+									>
+									<th
+										class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
+										>Created</th
+									>
+									<th
+										class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
+										>Expires</th
+									>
 								</tr>
 							</thead>
 							<tbody class="divide-y divide-gray-50 bg-white">
 								{#each reservations as reservation (reservation.id)}
 									<tr>
-										<td class="px-6 py-4 font-semibold text-gray-900">{reservation.profiles?.name ?? '—'}</td>
+										<td class="px-6 py-4 font-semibold text-gray-900"
+											>{reservation.profiles?.name ?? '—'}</td
+										>
 										<td class="px-6 py-4">
 											<p class="font-semibold text-gray-900">{reservation.books?.title ?? '—'}</p>
 											<p class="mt-1 text-xs text-gray-400">{reservation.books?.serial_no ?? ''}</p>
 										</td>
 										<td class="px-6 py-4 text-gray-600">#{reservation.position}</td>
 										<td class="px-6 py-4">
-											<span class={`rounded-full px-3 py-1 text-xs font-medium ring-1 ${reservation.status === 'ready' ? 'bg-[#E8F5EC] text-[#1B6B3A] ring-[#1B6B3A]/10' : 'bg-[#FDF8E8] text-[#C5A832] ring-[#C5A832]/15'}`}>
+											<span
+												class={`rounded-full px-3 py-1 text-xs font-medium ring-1 ${reservation.status === 'ready' ? 'bg-[#E8F5EC] text-[#1B6B3A] ring-[#1B6B3A]/10' : 'bg-[#FDF8E8] text-[#C5A832] ring-[#C5A832]/15'}`}
+											>
 												{reservation.status === 'ready' ? 'Ready' : 'Waiting'}
 											</span>
 										</td>
 										<td class="px-6 py-4 text-gray-600">{formatDate(reservation.created_at)}</td>
-										<td class="px-6 py-4 text-gray-600">{reservation.expires_at ? formatDate(reservation.expires_at) : '—'}</td>
+										<td class="px-6 py-4 text-gray-600"
+											>{reservation.expires_at ? formatDate(reservation.expires_at) : '—'}</td
+										>
 									</tr>
 								{/each}
 							</tbody>

@@ -56,14 +56,6 @@
 					>
 						Borrows
 					</a>
-					<a
-						href={resolve('/admin/reports')}
-						onclick={() => (mobileOpen = false)}
-						class="block text-3xl font-semibold tracking-tight text-gray-900"
-						style="animation: nav-reveal 0.45s cubic-bezier(0.32,0.72,0,1) both; animation-delay: 0.33s;"
-					>
-						Reports
-					</a>
 				</div>
 				<div
 					class="mt-auto rounded-[2rem] bg-white/70 p-1.5 shadow-[0_8px_40px_rgba(0,0,0,0.04)] ring-1 ring-black/[0.04]"
@@ -154,11 +146,6 @@
 						href={resolve('/admin/borrows')}
 						class="text-sm font-medium text-gray-500 transition-colors duration-300 hover:text-gray-900"
 						>Borrows</a
-					>
-					<a
-						href={resolve('/admin/reports')}
-						class="text-sm font-medium text-gray-500 transition-colors duration-300 hover:text-gray-900"
-						>Reports</a
 					>
 					<NotificationBell refreshKey={notificationRefreshKey} />
 					<div class="h-6 w-px bg-gray-300"></div>
