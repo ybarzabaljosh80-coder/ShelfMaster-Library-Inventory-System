@@ -31,8 +31,36 @@ create table public.borrow_records (
   due_date          timestamptz not null,
   returned_at       timestamptz,
   force_returned    boolean default false not null,
-  force_returned_by uuid references public.profiles(id)
+  force_returned_by uuid references public.profiles(id) on delete set null
 );
+
+create or replace function public.prepare_profile_delete()
+returns trigger
+language plpgsql
+security definer set search_path = ''
+as $$
+begin
+  if exists (
+    select 1 from public.borrow_records
+    where user_id = old.id and returned_at is null
+  ) then
+    raise exception 'Cannot delete user with active borrow records';
+  end if;
+
+  update public.borrow_records
+  set force_returned_by = null
+  where force_returned_by = old.id;
+
+  delete from public.borrow_records
+  where user_id = old.id;
+
+  return old;
+end;
+$$;
+
+create trigger before_profile_delete
+  before delete on public.profiles
+  for each row execute procedure public.prepare_profile_delete();
 
 -- =============================================================
 -- Row Level Security

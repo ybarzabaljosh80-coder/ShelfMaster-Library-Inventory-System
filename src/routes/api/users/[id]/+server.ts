@@ -1,5 +1,6 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
+import { createServiceRoleClient } from '$lib/server/supabase';
 
 export const DELETE: RequestHandler = async ({ params, locals }) => {
 	if (!locals.user) return json({ message: 'Unauthorized' }, { status: 401 });
@@ -32,12 +33,17 @@ export const DELETE: RequestHandler = async ({ params, locals }) => {
 		return json({ message: 'Moderators cannot remove admins or other moderators.' }, { status: 403 });
 	}
 
+	const serviceClient = createServiceRoleClient();
+	if (!serviceClient) return json({ message: 'Service role not configured.' }, { status: 500 });
+
 	// Check for active borrows
-	const { data: activeBorrows } = await locals.supabase
+	const { data: activeBorrows, error: activeBorrowsError } = await serviceClient
 		.from('borrow_records')
 		.select('id')
 		.eq('user_id', params.id)
 		.is('returned_at', null);
+
+	if (activeBorrowsError) return json({ message: activeBorrowsError.message }, { status: 500 });
 
 	if (activeBorrows && activeBorrows.length > 0) {
 		return json(
@@ -46,8 +52,23 @@ export const DELETE: RequestHandler = async ({ params, locals }) => {
 		);
 	}
 
-	// Delete profile (cascades from auth.users FK, but we delete profile directly)
-	const { error } = await locals.supabase.from('profiles').delete().eq('id', params.id);
+	const { error: forceReturnedByError } = await serviceClient
+		.from('borrow_records')
+		.update({ force_returned_by: null })
+		.eq('force_returned_by', params.id);
+
+	if (forceReturnedByError) return json({ message: forceReturnedByError.message }, { status: 500 });
+
+	const { error: borrowHistoryError } = await serviceClient
+		.from('borrow_records')
+		.delete()
+		.eq('user_id', params.id)
+		.not('returned_at', 'is', null);
+
+	if (borrowHistoryError) return json({ message: borrowHistoryError.message }, { status: 500 });
+
+	// Delete the Supabase Auth user; the profile is removed by the auth.users FK cascade.
+	const { error } = await serviceClient.auth.admin.deleteUser(params.id);
 
 	if (error) return json({ message: error.message }, { status: 500 });
 

@@ -1,4 +1,5 @@
 import { json } from '@sveltejs/kit';
+import { createServiceRoleClient } from '$lib/server/supabase';
 import type { RequestHandler } from './$types';
 
 export const GET: RequestHandler = async ({ locals }) => {
@@ -15,7 +16,10 @@ export const GET: RequestHandler = async ({ locals }) => {
 		return json({ message: 'Forbidden' }, { status: 403 });
 	}
 
-	const { data, error } = await locals.supabase
+	const serviceClient = createServiceRoleClient();
+	if (!serviceClient) return json({ message: 'Service role not configured.' }, { status: 500 });
+
+	const { data, error } = await serviceClient
 		.from('reservations')
 		.select('id, user_id, book_id, status, position, created_at, ready_at, expires_at, profiles(name), books(title, serial_no)')
 		.in('status', ['waiting', 'ready'])

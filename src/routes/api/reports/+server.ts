@@ -18,7 +18,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 
 	let query = locals.supabase
 		.from('borrow_records')
-		.select('id, borrowed_at, returned_at, force_returned, user_id, book_id, profiles(name), books(title, author, serial_no)')
+		.select('id, borrowed_at, returned_at, force_returned, user_id, book_id, profiles!borrow_records_user_id_fkey(name), books(title, author, serial_no)')
 		.order('borrowed_at', { ascending: false });
 
 	if (from) query = query.gte('borrowed_at', from);

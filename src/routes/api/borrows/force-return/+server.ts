@@ -15,10 +15,13 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	const staffRoles = ['admin', 'staff', 'moderator'];
 	if (!profile || !staffRoles.includes(profile.role)) return json({ message: 'Forbidden' }, { status: 403 });
 
+	const serviceClient = createServiceRoleClient();
+	if (!serviceClient) return json({ message: 'Service role not configured.' }, { status: 500 });
+
 	const { borrow_id } = await request.json();
 	if (!borrow_id) return json({ message: 'borrow_id is required.' }, { status: 400 });
 
-	const { data: record } = await locals.supabase
+	const { data: record } = await serviceClient
 		.from('borrow_records')
 		.select('id, book_id, returned_at')
 		.eq('id', borrow_id)
@@ -27,7 +30,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	if (!record) return json({ message: 'Borrow record not found.' }, { status: 404 });
 	if (record.returned_at) return json({ message: 'Already returned.' }, { status: 409 });
 
-	const { error } = await locals.supabase
+	const { error } = await serviceClient
 		.from('borrow_records')
 		.update({
 			returned_at: new Date().toISOString(),
@@ -39,7 +42,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	if (error) return json({ message: error.message }, { status: 500 });
 
 	try {
-		await handleReturnedBook(createServiceRoleClient() ?? locals.supabase, record.book_id);
+		await handleReturnedBook(serviceClient, record.book_id);
 	} catch (helperError) {
 		return json(
 			{ message: helperError instanceof Error ? helperError.message : 'Failed to update reservations.' },

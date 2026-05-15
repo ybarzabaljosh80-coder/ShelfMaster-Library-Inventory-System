@@ -1,4 +1,5 @@
 import { json } from '@sveltejs/kit';
+import { createServiceRoleClient } from '$lib/server/supabase';
 import type { RequestHandler } from './$types';
 
 export const GET: RequestHandler = async ({ url, locals }) => {
@@ -13,14 +14,17 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 	const staffRoles = ['admin', 'staff', 'moderator'];
 	if (!profile || !staffRoles.includes(profile.role)) return json({ message: 'Forbidden' }, { status: 403 });
 
+	const serviceClient = createServiceRoleClient();
+	if (!serviceClient) return json({ message: 'Service role not configured.' }, { status: 500 });
+
 	const userFilter = url.searchParams.get('user') ?? '';
 	const bookFilter = url.searchParams.get('book') ?? '';
 	const from = url.searchParams.get('from') ?? '';
 	const to = url.searchParams.get('to') ?? '';
 
-	let query = locals.supabase
+	let query = serviceClient
 		.from('borrow_records')
-		.select('id, borrowed_at, due_date, returned_at, force_returned, force_returned_by, user_id, book_id, profiles(name), books(title, author, serial_no)')
+		.select('id, borrowed_at, due_date, returned_at, force_returned, force_returned_by, user_id, book_id, profiles!borrow_records_user_id_fkey(name), books(title, author, serial_no)')
 		.order('borrowed_at', { ascending: false });
 
 	if (userFilter) {
