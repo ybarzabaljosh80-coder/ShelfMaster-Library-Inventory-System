@@ -1,5 +1,5 @@
 -- =============================================================
--- Library System — Supabase Schema
+-- Library System — Supabase Schema (Hardened)
 -- Run this in the Supabase SQL Editor (Dashboard → SQL Editor)
 -- =============================================================
 
@@ -101,9 +101,14 @@ create policy "Admins can delete books"
     select 1 from public.profiles where id = auth.uid() and role = 'admin'
   ));
 
-create policy "System can update books"
+create policy "Admins can update books"
   on public.books for update
-  using (true);
+  using (exists (
+    select 1 from public.profiles where id = auth.uid() and role = 'admin'
+  ))
+  with check (exists (
+    select 1 from public.profiles where id = auth.uid() and role = 'admin'
+  ));
 
 -- borrow_records
 create policy "Users can view own borrow records"
@@ -156,7 +161,7 @@ create trigger on_auth_user_created
 -- =============================================================
 
 create or replace function public.decrement_available_copies(book_id_input uuid)
-returns void language plpgsql security definer as $$
+returns void language plpgsql security definer set search_path = '' as $$
 begin
   update public.books
   set available_copies = available_copies - 1
@@ -165,7 +170,7 @@ end;
 $$;
 
 create or replace function public.increment_available_copies(book_id_input uuid)
-returns void language plpgsql security definer as $$
+returns void language plpgsql security definer set search_path = '' as $$
 begin
   update public.books
   set available_copies = least(available_copies + 1, total_copies)
@@ -174,7 +179,7 @@ end;
 $$;
 
 create or replace function public.add_book_copies(serial text, extra integer)
-returns void language plpgsql security definer as $$
+returns void language plpgsql security definer set search_path = '' as $$
 begin
   update public.books
   set total_copies = total_copies + extra,
@@ -182,6 +187,33 @@ begin
   where serial_no = serial;
 end;
 $$;
+
+-- =============================================================
+-- Secure user deletion (bypasses GoTrue API limitations)
+-- =============================================================
+
+create or replace function public.delete_user(target_user_id uuid)
+returns void
+language plpgsql
+security definer set search_path = ''
+as $$
+begin
+  delete from auth.identities where user_id = target_user_id;
+  delete from auth.sessions where user_id = target_user_id;
+  delete from auth.users where id = target_user_id;
+end;
+$$;
+
+-- =============================================================
+-- Lock down RPC access (prevent anon/authenticated from calling internal functions)
+-- =============================================================
+
+revoke execute on function public.decrement_available_copies(uuid) from anon, authenticated;
+revoke execute on function public.increment_available_copies(uuid) from anon, authenticated;
+revoke execute on function public.add_book_copies(text, integer) from anon, authenticated;
+revoke execute on function public.delete_user(uuid) from anon, authenticated;
+revoke execute on function public.handle_new_user() from anon, authenticated;
+revoke execute on function public.prepare_profile_delete() from anon, authenticated;
 
 -- =============================================================
 -- Reservations + Notifications
@@ -202,8 +234,8 @@ alter table public.reservations enable row level security;
 create policy "Users can view own reservations" on public.reservations for select using (auth.uid() = user_id);
 create policy "Admins can view all reservations" on public.reservations for select using (exists (select 1 from public.profiles where id = auth.uid() and role in ('admin', 'staff', 'moderator')));
 create policy "Users can insert own reservations" on public.reservations for insert with check (auth.uid() = user_id);
-create policy "System can update reservations" on public.reservations for update using (true);
-create policy "System can delete reservations" on public.reservations for delete using (true);
+create policy "Staff can update reservations" on public.reservations for update using (exists (select 1 from public.profiles where id = auth.uid() and role in ('admin', 'staff', 'moderator')));
+create policy "Staff can delete reservations" on public.reservations for delete using (exists (select 1 from public.profiles where id = auth.uid() and role in ('admin', 'staff', 'moderator')));
 
 create table public.notifications (
   id           uuid default gen_random_uuid() primary key,
@@ -219,5 +251,5 @@ create table public.notifications (
 alter table public.notifications enable row level security;
 create policy "Users can view own notifications" on public.notifications for select using (auth.uid() = user_id);
 create policy "Users can update own notifications" on public.notifications for update using (auth.uid() = user_id);
-create policy "System can insert notifications" on public.notifications for insert with check (true);
-create policy "System can delete notifications" on public.notifications for delete using (true);
+create policy "Staff can insert notifications" on public.notifications for insert with check (exists (select 1 from public.profiles where id = auth.uid() and role in ('admin', 'staff', 'moderator')));
+create policy "Staff can delete notifications" on public.notifications for delete using (exists (select 1 from public.profiles where id = auth.uid() and role in ('admin', 'staff', 'moderator')));

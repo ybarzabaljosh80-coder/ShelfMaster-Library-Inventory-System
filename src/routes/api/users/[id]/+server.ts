@@ -67,8 +67,7 @@ export const DELETE: RequestHandler = async ({ params, locals }) => {
 
 	if (borrowHistoryError) return json({ message: borrowHistoryError.message }, { status: 500 });
 
-	// Delete the Supabase Auth user; the profile is removed by the auth.users FK cascade.
-	const { error } = await serviceClient.auth.admin.deleteUser(params.id);
+	const { error } = await serviceClient.rpc('delete_user', { target_user_id: params.id });
 
 	if (error) return json({ message: error.message }, { status: 500 });
 
