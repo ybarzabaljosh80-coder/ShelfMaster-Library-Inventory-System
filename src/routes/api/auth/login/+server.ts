@@ -24,5 +24,6 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		return json({ redirect: '/pending-approval' });
 	}
 
-	return json({ redirect: profile?.role === 'admin' ? '/admin/dashboard' : '/dashboard' });
+	const adminRoles = ['admin', 'staff', 'moderator'];
+	return json({ redirect: adminRoles.includes(profile?.role ?? '') ? '/admin/dashboard' : '/dashboard' });
 };

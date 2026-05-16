@@ -23,8 +23,9 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 		return { profile: created };
 	}
 
+	const adminRoles = ['admin', 'staff', 'moderator'];
+	if (adminRoles.includes(profile.role)) throw redirect(302, '/admin/dashboard');
 	if (profile.role === 'pending') throw redirect(302, '/pending-approval');
-	if (profile.role === 'admin') throw redirect(302, '/admin/dashboard');
 
 	return { profile };
 };

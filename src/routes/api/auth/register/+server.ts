@@ -12,6 +12,24 @@ export const POST: RequestHandler = async ({ request }) => {
 		);
 	}
 
+	const normalizedEmail = String(email).trim().toLowerCase();
+
+	// Basic format validation
+	if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+		return json({ message: 'Please enter a valid email address.' }, { status: 400 });
+	}
+
+	// Domain restriction: only allow institutional emails
+	// Remove or modify this check if you want to allow external emails (e.g., Gmail)
+	const allowedDomains = ['spcba.edu.ph'];
+	const domain = normalizedEmail.split('@')[1];
+	if (!allowedDomains.includes(domain)) {
+		return json(
+			{ message: 'Registration is limited to institutional email addresses (@spcba.edu.ph).' },
+			{ status: 400 }
+		);
+	}
+
 	const name = `${String(firstName).trim()} ${String(lastName).trim()}`;
 	const serviceClient = createServiceRoleClient();
 
@@ -20,7 +38,7 @@ export const POST: RequestHandler = async ({ request }) => {
 	}
 
 	const { data: authData, error } = await serviceClient.auth.admin.createUser({
-		email,
+		email: normalizedEmail,
 		password,
 		email_confirm: true,
 		user_metadata: { name }
@@ -30,7 +48,6 @@ export const POST: RequestHandler = async ({ request }) => {
 		return json({ message: error.message }, { status: 400 });
 	}
 
-	// Belt-and-suspenders: explicitly confirm email in case createUser didn't apply it
 	if (authData?.user?.id) {
 		await serviceClient.auth.admin
 			.updateUserById(authData.user.id, { email_confirm: true })

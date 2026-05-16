@@ -89,25 +89,25 @@ create policy "Authenticated users can view books"
   to authenticated
   using (true);
 
-create policy "Admins can insert books"
+create policy "Staff can insert books"
   on public.books for insert
   with check (exists (
-    select 1 from public.profiles where id = auth.uid() and role = 'admin'
+    select 1 from public.profiles where id = auth.uid() and role in ('admin', 'staff', 'moderator')
   ));
 
-create policy "Admins can delete books"
+create policy "Staff can delete books"
   on public.books for delete
   using (exists (
-    select 1 from public.profiles where id = auth.uid() and role = 'admin'
+    select 1 from public.profiles where id = auth.uid() and role in ('admin', 'staff', 'moderator')
   ));
 
-create policy "Admins can update books"
+create policy "Staff can update books"
   on public.books for update
   using (exists (
-    select 1 from public.profiles where id = auth.uid() and role = 'admin'
+    select 1 from public.profiles where id = auth.uid() and role in ('admin', 'staff', 'moderator')
   ))
   with check (exists (
-    select 1 from public.profiles where id = auth.uid() and role = 'admin'
+    select 1 from public.profiles where id = auth.uid() and role in ('admin', 'staff', 'moderator')
   ));
 
 -- borrow_records
