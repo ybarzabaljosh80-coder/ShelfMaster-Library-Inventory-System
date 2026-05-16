@@ -99,6 +99,8 @@ export async function generateDueNotifications(supabase: SupabaseClient, userId:
 	if (error) throw new Error(error.message);
 
 	let createdCount = 0;
+	const emailMessages: string[] = [];
+	let emailTitle = '';
 
 	for (const borrow of borrows ?? []) {
 		if (!borrow.due_date) continue;
@@ -133,11 +135,24 @@ export async function generateDueNotifications(supabase: SupabaseClient, userId:
 		const result = await createNotificationIfNeeded(supabase, {
 			userId,
 			referenceId: borrow.id,
-			sendEmailIfCreated: true,
+			sendEmailIfCreated: false,
 			...payload
 		});
 
-		if (result.created) createdCount += 1;
+		if (result.created) {
+			createdCount += 1;
+			emailMessages.push(payload.message);
+			if (!emailTitle) emailTitle = payload.title;
+		}
+	}
+
+	if (emailMessages.length > 0) {
+		const email = await getUserEmail(userId);
+		if (email) {
+			const subject = emailMessages.length === 1 ? emailTitle : 'Library Reminders';
+			const html = getNotificationEmailHtml(subject, emailMessages.join('<br><br>'));
+			await sendEmail(email, subject, html);
+		}
 	}
 
 	return { createdCount };

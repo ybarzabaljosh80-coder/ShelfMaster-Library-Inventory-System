@@ -9,10 +9,18 @@
 	let error = $state('');
 	let success = $state('');
 	let loading = $state(false);
+	let submittedAt = $state(0);
+	const COOLDOWN_MS = 60000;
 
 	async function handleRegister() {
 		error = '';
 		success = '';
+
+		const now = Date.now();
+		if (submittedAt && now - submittedAt < COOLDOWN_MS) {
+			success = 'We already sent a confirmation email. Please check your inbox (including spam). You can try again shortly.';
+			return;
+		}
 
 		if (password !== confirmPassword) {
 			error = 'Passwords do not match.';
@@ -25,6 +33,7 @@
 		}
 
 		loading = true;
+		submittedAt = now;
 
 		const res = await fetch('/api/auth/register', {
 			method: 'POST',
