@@ -7,7 +7,7 @@
 create table public.profiles (
   id         uuid references auth.users on delete cascade primary key,
   name       text not null,
-  role       text not null default 'user' check (role in ('user', 'staff', 'moderator', 'admin')),
+  role       text not null default 'pending' check (role in ('pending', 'user', 'staff', 'moderator', 'admin')),
   created_at timestamptz default now() not null
 );
 
@@ -141,7 +141,7 @@ begin
   values (
     new.id,
     coalesce(new.raw_user_meta_data->>'name', 'User'),
-    'user'
+    'pending'
   );
   return new;
 end;

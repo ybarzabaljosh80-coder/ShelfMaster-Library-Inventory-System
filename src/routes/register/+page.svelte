@@ -89,7 +89,7 @@
 						<div
 							class="rounded-[1.5rem] bg-green-50 px-5 py-5 text-sm text-green-700 ring-1 ring-green-100"
 						>
-							<p class="font-semibold text-green-800">Account ready</p>
+							<p class="font-semibold text-green-800">Registration submitted</p>
 							<p class="mt-2 leading-6">{success}</p>
 							<p class="mt-4">
 								<a

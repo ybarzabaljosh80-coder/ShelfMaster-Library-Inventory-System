@@ -1,7 +1,7 @@
 export interface Profile {
 	id: string;
 	name: string;
-	role: 'user' | 'staff' | 'moderator' | 'admin';
+	role: 'pending' | 'user' | 'staff' | 'moderator' | 'admin';
 	created_at: string;
 }
 

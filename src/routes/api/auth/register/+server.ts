@@ -1,7 +1,8 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
+import { createServiceRoleClient } from '$lib/server/supabase';
 
-export const POST: RequestHandler = async ({ request, locals }) => {
+export const POST: RequestHandler = async ({ request }) => {
 	const { firstName, lastName, email, password } = await request.json();
 
 	if (!firstName || !lastName || !email || !password) {
@@ -12,23 +13,24 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	}
 
 	const name = `${String(firstName).trim()} ${String(lastName).trim()}`;
+	const serviceClient = createServiceRoleClient();
 
-	const { data, error } = await locals.supabase.auth.signUp({
+	if (!serviceClient) {
+		return json({ message: 'Service role not configured.' }, { status: 500 });
+	}
+
+	const { error } = await serviceClient.auth.admin.createUser({
 		email,
 		password,
-		options: {
-			data: { name }
-		}
+		email_confirm: true,
+		user_metadata: { name }
 	});
 
 	if (error) {
 		return json({ message: error.message }, { status: 400 });
 	}
 
-	// If email confirmation is required, session will be null
-	if (!data.session) {
-		return json({ message: 'Check your email to confirm your account.' }, { status: 200 });
-	}
-
-	return json({ redirect: '/dashboard' });
+	return json({
+		message: 'Registration successful. Your account is pending approval from a librarian.'
+	});
 };

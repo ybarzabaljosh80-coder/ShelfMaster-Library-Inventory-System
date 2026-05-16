@@ -10,8 +10,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 		.eq('id', locals.user.id)
 		.single();
 
-	if (profile?.role === 'pending') throw redirect(302, '/pending-approval');
-
-	const adminRoles = ['admin', 'staff', 'moderator'];
-	throw redirect(302, adminRoles.includes(profile?.role ?? '') ? '/admin/dashboard' : '/dashboard');
+	if (profile?.role !== 'pending') {
+		const adminRoles = ['admin', 'staff', 'moderator'];
+		throw redirect(302, adminRoles.includes(profile?.role ?? '') ? '/admin/dashboard' : '/dashboard');
+	}
 };

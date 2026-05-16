@@ -20,5 +20,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		.eq('id', data.user.id)
 		.single();
 
+	if (profile?.role === 'pending') {
+		return json({ redirect: '/pending-approval' });
+	}
+
 	return json({ redirect: profile?.role === 'admin' ? '/admin/dashboard' : '/dashboard' });
 };

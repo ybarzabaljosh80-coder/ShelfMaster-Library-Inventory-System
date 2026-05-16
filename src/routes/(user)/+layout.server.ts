@@ -14,7 +14,7 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 		const meta = locals.user.user_metadata;
 		const { data: created } = await locals.supabase
 			.from('profiles')
-			.insert({ id: locals.user.id, name: meta?.name ?? locals.user.email ?? 'User', role: 'user' })
+			.insert({ id: locals.user.id, name: meta?.name ?? locals.user.email ?? 'User', role: 'pending' })
 			.select('id, name, role')
 			.single();
 
@@ -23,6 +23,7 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 		return { profile: created };
 	}
 
+	if (profile.role === 'pending') throw redirect(302, '/pending-approval');
 	if (profile.role === 'admin') throw redirect(302, '/admin/dashboard');
 
 	return { profile };

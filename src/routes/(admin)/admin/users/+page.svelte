@@ -123,6 +123,8 @@
 				return 'bg-[#E8F5EC] text-[#1B6B3A] ring-[#1B6B3A]/10';
 			case 'staff':
 				return 'bg-[#E8F5EC] text-[#155A2F] ring-[#155A2F]/10';
+			case 'pending':
+				return 'bg-amber-50 text-amber-700 ring-amber-200';
 			default:
 				return 'bg-gray-100 text-gray-600 ring-black/[0.04]';
 		}
@@ -160,6 +162,7 @@
 					class="rounded-xl border-0 bg-gray-50/80 px-4 py-3 text-sm ring-1 ring-black/[0.06] transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] outline-none focus:bg-white focus:ring-2 focus:ring-[#1B6B3A]/30"
 				>
 					<option value="">All roles</option>
+					<option value="pending">Pending</option>
 					<option value="user">User</option>
 					<option value="staff">Staff</option>
 					<option value="moderator">Moderator</option>
