@@ -2,11 +2,16 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
 export const POST: RequestHandler = async ({ request, locals }) => {
-	const { name, email, password } = await request.json();
+	const { firstName, lastName, email, password } = await request.json();
 
-	if (!name || !email || !password) {
-		return json({ message: 'Name, email, and password are required.' }, { status: 400 });
+	if (!firstName || !lastName || !email || !password) {
+		return json(
+			{ message: 'First name, last name, email, and password are required.' },
+			{ status: 400 }
+		);
 	}
+
+	const name = `${String(firstName).trim()} ${String(lastName).trim()}`;
 
 	const { data, error } = await locals.supabase.auth.signUp({
 		email,

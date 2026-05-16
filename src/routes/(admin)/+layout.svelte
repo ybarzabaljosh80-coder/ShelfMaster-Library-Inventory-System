@@ -2,12 +2,18 @@
 	import type { Snippet } from 'svelte';
 	import { onMount } from 'svelte';
 	import { resolve } from '$app/paths';
+	import { page } from '$app/state';
 	import NotificationBell from '$lib/components/NotificationBell.svelte';
 	import type { LayoutData } from './$types';
 
 	let { data, children } = $props<{ data: LayoutData; children: Snippet }>();
 	let mobileOpen = $state(false);
 	let notificationRefreshKey = $state(0);
+	const mobileMenuId = 'admin-mobile-menu';
+	const dashboardPath = resolve('/admin/dashboard');
+	const booksPath = resolve('/admin/books');
+	const usersPath = resolve('/admin/users');
+	const borrowsPath = resolve('/admin/borrows');
 
 	onMount(() => {
 		void (async () => {
@@ -15,43 +21,64 @@
 			notificationRefreshKey += 1;
 		})();
 	});
+
+	$effect(() => {
+		if (!mobileOpen) return;
+
+		const handleEscape = (event: KeyboardEvent) => {
+			if (event.key === 'Escape') mobileOpen = false;
+		};
+
+		document.addEventListener('keydown', handleEscape);
+		return () => document.removeEventListener('keydown', handleEscape);
+	});
 </script>
 
 <div class="min-h-[100dvh] bg-[#FAFAF9] pb-12">
 	{#if mobileOpen}
-		<div class="fixed inset-0 z-40 bg-white/90 backdrop-blur-3xl sm:hidden">
+		<div
+			id={mobileMenuId}
+			class="fixed inset-0 z-40 bg-white/90 backdrop-blur-3xl sm:hidden"
+			role="dialog"
+			aria-modal="true"
+			aria-label="Admin navigation menu"
+		>
 			<div class="flex min-h-[100dvh] flex-col px-6 py-24">
 				<div class="space-y-3">
 					<a
-						href={resolve('/admin/dashboard')}
+						href={dashboardPath}
 						onclick={() => (mobileOpen = false)}
-						class="block text-3xl font-semibold tracking-tight text-gray-900"
+						aria-current={page.url.pathname === dashboardPath ? 'page' : undefined}
+						class={`block rounded-2xl px-4 py-3 text-3xl font-semibold tracking-tight transition-all duration-300 ${page.url.pathname === dashboardPath ? 'bg-[#E8F5EC] text-[#1B6B3A] ring-1 ring-[#1B6B3A]/15' : 'text-gray-900 hover:bg-white/70'}`}
 						style="animation: nav-reveal 0.45s cubic-bezier(0.32,0.72,0,1) both; animation-delay: 0.05s;"
 					>
 						Dashboard
 					</a>
 					<a
-						href={resolve('/admin/books')}
+						href={booksPath}
 						onclick={() => (mobileOpen = false)}
-						class="block text-3xl font-semibold tracking-tight text-gray-900"
+						aria-current={page.url.pathname === booksPath ? 'page' : undefined}
+						class={`block rounded-2xl px-4 py-3 text-3xl font-semibold tracking-tight transition-all duration-300 ${page.url.pathname === booksPath ? 'bg-[#E8F5EC] text-[#1B6B3A] ring-1 ring-[#1B6B3A]/15' : 'text-gray-900 hover:bg-white/70'}`}
 						style="animation: nav-reveal 0.45s cubic-bezier(0.32,0.72,0,1) both; animation-delay: 0.12s;"
 					>
 						Books
 					</a>
 					{#if data.profile?.role === 'admin' || data.profile?.role === 'moderator'}
 						<a
-							href={resolve('/admin/users')}
+							href={usersPath}
 							onclick={() => (mobileOpen = false)}
-							class="block text-3xl font-semibold tracking-tight text-gray-900"
+							aria-current={page.url.pathname === usersPath ? 'page' : undefined}
+							class={`block rounded-2xl px-4 py-3 text-3xl font-semibold tracking-tight transition-all duration-300 ${page.url.pathname === usersPath ? 'bg-[#E8F5EC] text-[#1B6B3A] ring-1 ring-[#1B6B3A]/15' : 'text-gray-900 hover:bg-white/70'}`}
 							style="animation: nav-reveal 0.45s cubic-bezier(0.32,0.72,0,1) both; animation-delay: 0.19s;"
 						>
 							Users
 						</a>
 					{/if}
 					<a
-						href={resolve('/admin/borrows')}
+						href={borrowsPath}
 						onclick={() => (mobileOpen = false)}
-						class="block text-3xl font-semibold tracking-tight text-gray-900"
+						aria-current={page.url.pathname === borrowsPath ? 'page' : undefined}
+						class={`block rounded-2xl px-4 py-3 text-3xl font-semibold tracking-tight transition-all duration-300 ${page.url.pathname === borrowsPath ? 'bg-[#E8F5EC] text-[#1B6B3A] ring-1 ring-[#1B6B3A]/15' : 'text-gray-900 hover:bg-white/70'}`}
 						style="animation: nav-reveal 0.45s cubic-bezier(0.32,0.72,0,1) both; animation-delay: 0.26s;"
 					>
 						Borrows
@@ -89,16 +116,16 @@
 		</div>
 	{/if}
 
-	<nav class="relative z-50 mt-4 px-4">
+	<nav class="relative z-50 mt-4 px-4" aria-label="Admin primary">
 		<div
-			class="mx-auto max-w-5xl rounded-2xl bg-white/70 px-4 py-3 shadow-[0_2px_20px_rgba(0,0,0,0.04)] ring-1 ring-black/[0.06] backdrop-blur-xl sm:px-6"
+			class="mx-auto max-w-5xl rounded-[1.7rem] bg-white/75 px-4 py-3 shadow-[0_10px_30px_rgba(0,0,0,0.06)] ring-1 ring-black/[0.05] backdrop-blur-xl sm:px-6"
 		>
 			<div class="flex items-center justify-between gap-4">
 				<div class="flex items-center gap-3">
 					<img
 						src="/logo.png"
 						alt="SPCBA"
-						class="h-10 w-10 rounded-2xl shadow-[0_10px_25px_rgba(27,107,58,0.14)]"
+						class="h-10 w-10 rounded-2xl shadow-[0_10px_25px_rgba(27,107,58,0.14)] ring-1 ring-black/[0.05]"
 					/>
 					<div>
 						<p class="text-sm font-semibold tracking-tight text-gray-900">SPCBA Library</p>
@@ -108,8 +135,10 @@
 
 				<button
 					onclick={() => (mobileOpen = !mobileOpen)}
-					class="relative z-50 flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-gray-700 ring-1 ring-black/[0.06] transition-all duration-300 hover:bg-white sm:hidden"
+					class={`relative z-50 flex h-11 w-11 items-center justify-center rounded-full text-gray-700 ring-1 ring-black/[0.06] transition-all duration-300 sm:hidden ${mobileOpen ? 'bg-[#E8F5EC] text-[#1B6B3A]' : 'bg-white/90 hover:bg-white'}`}
 					aria-label="Toggle menu"
+					aria-expanded={mobileOpen}
+					aria-controls={mobileMenuId}
 				>
 					<div class="relative h-4 w-4">
 						<span
@@ -124,27 +153,31 @@
 					</div>
 				</button>
 
-				<div class="hidden items-center gap-6 sm:flex">
+				<div class="hidden items-center gap-4 sm:flex">
 					<a
-						href={resolve('/admin/dashboard')}
-						class="text-sm font-medium text-gray-500 transition-colors duration-300 hover:text-gray-900"
+						href={dashboardPath}
+						aria-current={page.url.pathname === dashboardPath ? 'page' : undefined}
+						class={`rounded-full px-3.5 py-2 text-sm font-medium transition-all duration-300 ${page.url.pathname === dashboardPath ? 'bg-[#E8F5EC] text-[#1B6B3A] ring-1 ring-[#1B6B3A]/15' : 'text-gray-500 hover:bg-white hover:text-gray-900'}`}
 						>Dashboard</a
 					>
 					<a
-						href={resolve('/admin/books')}
-						class="text-sm font-medium text-gray-500 transition-colors duration-300 hover:text-gray-900"
+						href={booksPath}
+						aria-current={page.url.pathname === booksPath ? 'page' : undefined}
+						class={`rounded-full px-3.5 py-2 text-sm font-medium transition-all duration-300 ${page.url.pathname === booksPath ? 'bg-[#E8F5EC] text-[#1B6B3A] ring-1 ring-[#1B6B3A]/15' : 'text-gray-500 hover:bg-white hover:text-gray-900'}`}
 						>Books</a
 					>
 					{#if data.profile?.role === 'admin' || data.profile?.role === 'moderator'}
 						<a
-							href={resolve('/admin/users')}
-							class="text-sm font-medium text-gray-500 transition-colors duration-300 hover:text-gray-900"
+							href={usersPath}
+							aria-current={page.url.pathname === usersPath ? 'page' : undefined}
+							class={`rounded-full px-3.5 py-2 text-sm font-medium transition-all duration-300 ${page.url.pathname === usersPath ? 'bg-[#E8F5EC] text-[#1B6B3A] ring-1 ring-[#1B6B3A]/15' : 'text-gray-500 hover:bg-white hover:text-gray-900'}`}
 							>Users</a
 						>
 					{/if}
 					<a
-						href={resolve('/admin/borrows')}
-						class="text-sm font-medium text-gray-500 transition-colors duration-300 hover:text-gray-900"
+						href={borrowsPath}
+						aria-current={page.url.pathname === borrowsPath ? 'page' : undefined}
+						class={`rounded-full px-3.5 py-2 text-sm font-medium transition-all duration-300 ${page.url.pathname === borrowsPath ? 'bg-[#E8F5EC] text-[#1B6B3A] ring-1 ring-[#1B6B3A]/15' : 'text-gray-500 hover:bg-white hover:text-gray-900'}`}
 						>Borrows</a
 					>
 					<NotificationBell refreshKey={notificationRefreshKey} />

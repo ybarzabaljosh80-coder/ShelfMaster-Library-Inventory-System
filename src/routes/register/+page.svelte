@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 
-	let name = $state('');
+	let firstName = $state('');
+	let lastName = $state('');
 	let email = $state('');
 	let password = $state('');
 	let confirmPassword = $state('');
@@ -28,7 +29,7 @@
 		const res = await fetch('/api/auth/register', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ name, email, password })
+			body: JSON.stringify({ firstName, lastName, email, password })
 		});
 
 		const data = await res.json();
@@ -91,17 +92,36 @@
 						</div>
 					{:else}
 						<form class="space-y-5">
-							<div class="space-y-2">
-								<label for="name" class="block text-sm font-medium text-gray-700">Full Name</label>
-								<input
-									id="name"
-									type="text"
-									bind:value={name}
-									required
-									autocomplete="name"
-									placeholder="Avery Mercer"
-									class="block w-full rounded-xl border-0 bg-gray-50/80 px-4 py-3 text-sm ring-1 ring-black/[0.06] transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] outline-none placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-[#1B6B3A]/30"
-								/>
+							<div class="grid gap-5 sm:grid-cols-2">
+								<div class="space-y-2">
+									<label for="first-name" class="block text-sm font-medium text-gray-700"
+										>First Name</label
+									>
+									<input
+										id="first-name"
+										type="text"
+										bind:value={firstName}
+										required
+										autocomplete="given-name"
+										placeholder="Avery"
+										class="block w-full rounded-xl border-0 bg-gray-50/80 px-4 py-3 text-sm ring-1 ring-black/[0.06] transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] outline-none placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-[#1B6B3A]/30"
+									/>
+								</div>
+
+								<div class="space-y-2">
+									<label for="last-name" class="block text-sm font-medium text-gray-700"
+										>Last Name</label
+									>
+									<input
+										id="last-name"
+										type="text"
+										bind:value={lastName}
+										required
+										autocomplete="family-name"
+										placeholder="Mercer"
+										class="block w-full rounded-xl border-0 bg-gray-50/80 px-4 py-3 text-sm ring-1 ring-black/[0.06] transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] outline-none placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-[#1B6B3A]/30"
+									/>
+								</div>
 							</div>
 
 							<div class="space-y-2">

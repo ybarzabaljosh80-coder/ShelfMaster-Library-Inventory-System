@@ -6,10 +6,16 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 
 	const query = url.searchParams.get('q') ?? '';
 	const category = url.searchParams.get('category') ?? '';
+	const page = Number(url.searchParams.get('page'));
+	const pageSize = Number(url.searchParams.get('pageSize'));
+	const paginated =
+		Number.isInteger(page) && page > 0 && Number.isInteger(pageSize) && pageSize > 0;
 
 	let dbQuery = locals.supabase
 		.from('books')
-		.select('id, title, author, serial_no, category, total_copies, available_copies')
+		.select('id, title, author, serial_no, category, total_copies, available_copies', {
+			count: paginated ? 'exact' : undefined
+		})
 		.order('title');
 
 	if (query) {
@@ -22,9 +28,15 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 		dbQuery = dbQuery.eq('category', category);
 	}
 
-	const { data, error } = await dbQuery;
+	if (paginated) {
+		const from = (page - 1) * pageSize;
+		dbQuery = dbQuery.range(from, from + pageSize - 1);
+	}
+
+	const { data, error, count } = await dbQuery;
 
 	if (error) return json({ message: error.message }, { status: 500 });
+	if (paginated) return json({ books: data ?? [], total: count ?? 0 });
 
 	return json(data);
 };

@@ -2,6 +2,11 @@
 	import { onMount } from 'svelte';
 	import type { Book } from '$lib/types';
 
+	type BookListResponse = { books: Book[]; total: number };
+	type ErrorResponse = { message?: string };
+
+	const PAGE_SIZE = 20;
+
 	const GENRES = [
 		'Fiction',
 		'Non-Fiction',
@@ -33,6 +38,8 @@
 
 	let query = $state('');
 	let books = $state<Book[]>([]);
+	let page = $state(1);
+	let totalBooks = $state(0);
 	let loading = $state(false);
 	let searched = $state(false);
 	let message = $state('');
@@ -54,6 +61,10 @@
 	let editCategory = $state('');
 	let saving = $state(false);
 
+	const totalPages = $derived(Math.max(1, Math.ceil(totalBooks / PAGE_SIZE)));
+	const pageStart = $derived(totalBooks === 0 ? 0 : (page - 1) * PAGE_SIZE + 1);
+	const pageEnd = $derived(Math.min(page * PAGE_SIZE, totalBooks));
+
 	onMount(() => {
 		search();
 	});
@@ -62,9 +73,41 @@
 		loading = true;
 		searched = true;
 		message = '';
-		const res = await fetch(`/api/books?q=${encodeURIComponent(query)}`);
-		books = await res.json();
+		const params = new URLSearchParams({
+			q: query,
+			page: String(page),
+			pageSize: String(PAGE_SIZE)
+		});
+		const res = await fetch(`/api/books?${params.toString()}`);
+		const data = (await res.json()) as BookListResponse | ErrorResponse;
 		loading = false;
+
+		if (!res.ok) {
+			books = [];
+			totalBooks = 0;
+			message = 'message' in data && data.message ? data.message : 'Unable to load books.';
+			messageType = 'error';
+			return;
+		}
+
+		if ('books' in data) {
+			books = data.books;
+			totalBooks = data.total;
+		}
+	}
+
+	function submitSearch() {
+		page = 1;
+		void search();
+	}
+
+	function goToPage(nextPage: number) {
+		page = Math.min(Math.max(nextPage, 1), totalPages);
+		void search();
+	}
+
+	function triggerImport() {
+		if (!importing) fileInput?.click();
 	}
 
 	async function addBook() {
@@ -122,6 +165,7 @@
 		} else {
 			message = 'Book deleted.';
 			messageType = 'success';
+			if (books.length === 1 && page > 1) page -= 1;
 			await search();
 		}
 	}
@@ -141,7 +185,10 @@
 
 		message = data.message;
 		messageType = res.ok ? 'success' : 'error';
-		if (res.ok && searched) await search();
+		if (res.ok && searched) {
+			page = 1;
+			await search();
+		}
 	}
 
 	function exportBooks() {
@@ -205,19 +252,24 @@
 				class="rounded-full bg-white px-5 py-2.5 text-sm font-medium text-gray-700 ring-1 ring-black/[0.08] transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-gray-50 hover:ring-black/[0.12] active:scale-[0.98]"
 				>Export Excel</button
 			>
-			<label
-				class={`cursor-pointer rounded-full bg-white px-5 py-2.5 text-sm font-medium text-gray-700 ring-1 ring-black/[0.08] transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-gray-50 hover:ring-black/[0.12] active:scale-[0.98] ${importing ? 'opacity-60' : ''}`}
+			<button
+				type="button"
+				onclick={triggerImport}
+				disabled={importing}
+				class="rounded-full bg-white px-5 py-2.5 text-sm font-medium text-gray-700 ring-1 ring-black/[0.08] transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-gray-50 hover:ring-black/[0.12] active:scale-[0.98] disabled:opacity-60"
 			>
 				{importing ? 'Importing…' : 'Import Excel'}
-				<input
-					type="file"
-					accept=".xlsx,.xls,.csv"
-					class="hidden"
-					bind:this={fileInput}
-					onchange={importBooks}
-					disabled={importing}
-				/>
-			</label>
+			</button>
+			<input
+				type="file"
+				accept=".xlsx,.xls,.csv"
+				class="hidden"
+				bind:this={fileInput}
+				onchange={importBooks}
+				disabled={importing}
+				aria-hidden="true"
+				tabindex="-1"
+			/>
 		</div>
 	</div>
 
@@ -318,6 +370,7 @@
 
 	{#if message}
 		<p
+			role={messageType === 'error' ? 'alert' : 'status'}
 			class={`mt-4 rounded-2xl px-4 py-3 text-sm ring-1 ${messageType === 'success' ? 'bg-green-50 text-green-700 ring-green-100' : 'bg-red-50 text-red-600 ring-red-100'}`}
 		>
 			{message}
@@ -338,7 +391,7 @@
 				class="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]"
 				onsubmit={(event) => {
 					event.preventDefault();
-					search();
+					submitSearch();
 				}}
 			>
 				<div class="space-y-1.5">
@@ -365,7 +418,18 @@
 	</div>
 
 	{#if searched}
-		{#if books.length === 0}
+		{#if loading && books.length === 0}
+			<div
+				class="mt-6 rounded-[2rem] bg-white/60 p-1.5 shadow-[0_8px_40px_rgba(0,0,0,0.04)] ring-1 ring-black/[0.04]"
+				role="status"
+				aria-live="polite"
+			>
+				<div class="rounded-[calc(2rem-0.375rem)] bg-white px-8 py-12 text-center text-gray-900">
+					<p class="text-lg font-semibold">Loading books</p>
+					<p class="mt-2 text-sm text-gray-500">Fetching the latest catalog records.</p>
+				</div>
+			</div>
+		{:else if books.length === 0}
 			<div
 				class="mt-6 rounded-[2rem] bg-white/60 p-1.5 shadow-[0_8px_40px_rgba(0,0,0,0.04)] ring-1 ring-black/[0.04]"
 			>
@@ -380,111 +444,252 @@
 			<div
 				class="mt-6 rounded-[2rem] bg-white/60 p-1.5 shadow-[0_8px_40px_rgba(0,0,0,0.04)] ring-1 ring-black/[0.04]"
 			>
-				<div class="overflow-x-auto rounded-[calc(2rem-0.375rem)] bg-white">
-					<table class="w-full text-sm text-gray-900">
-						<thead>
-							<tr class="border-b border-gray-100 bg-gray-50/50">
-								<th
-									class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
-									>Title</th
-								>
-								<th
-									class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
-									>Author</th
-								>
-								<th
-									class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
-									>Category</th
-								>
-								<th
-									class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
-									>Serial</th
-								>
-								<th
-									class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
-									>Copies</th
-								>
-								<th
-									class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
-									>Status</th
-								>
-								<th
-									class="px-6 py-4 text-right text-xs font-semibold tracking-wider text-gray-400 uppercase"
-								></th>
-							</tr>
-						</thead>
-						<tbody class="divide-y divide-gray-50">
-							{#each books as book (book.id)}
-								<tr class="transition-colors duration-200 hover:bg-gray-50/50">
-									<td class="px-6 py-4 font-semibold text-gray-900">{book.title}</td>
-									<td class="px-6 py-4 text-gray-600">{book.author}</td>
-									<td class="px-6 py-4 text-gray-500">
-										{#if editingId === book.id}
-											<select
-												bind:value={editCategory}
-												class="w-full rounded-xl border-0 bg-gray-50/80 px-3 py-2 text-xs ring-1 ring-black/[0.06] transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] outline-none focus:bg-white focus:ring-2 focus:ring-[#1B6B3A]/30"
-											>
-												<option value="">None</option>
-												{#each GENRES as genre (genre)}
-													<option value={genre}>{genre}</option>
-												{/each}
-											</select>
-										{:else}
-											{book.category ?? '—'}
+				<div class="rounded-[calc(2rem-0.375rem)] bg-white" aria-busy={loading}>
+					<div class="space-y-3 p-4 md:hidden">
+						{#each books as book (book.id)}
+							<div class="rounded-2xl bg-gray-50/80 p-4 ring-1 ring-black/[0.06]">
+								<div class="flex items-start justify-between gap-3">
+									<div>
+										<p class="font-semibold text-gray-900">{book.title}</p>
+										<p class="mt-1 text-sm text-gray-500">{book.author}</p>
+									</div>
+									<span
+										class={`shrink-0 rounded-full px-3 py-1 text-xs font-medium ring-1 ${book.available_copies > 0 ? 'bg-green-50 text-green-700 ring-green-100' : 'bg-red-50 text-red-600 ring-red-100'}`}
+										>{book.available_copies > 0 ? 'Available' : 'All Borrowed'}</span
+									>
+								</div>
+
+								<div class="mt-4 grid gap-3 text-sm text-gray-500">
+									<div class="flex flex-wrap gap-2 text-xs">
+										<span class="rounded-full bg-white px-3 py-1 ring-1 ring-black/[0.04]">
+											Serial {book.serial_no}
+										</span>
+										{#if editingId !== book.id}
+											<span class="rounded-full bg-white px-3 py-1 ring-1 ring-black/[0.04]">
+												{book.category ?? 'No category'}
+											</span>
+											<span class="rounded-full bg-white px-3 py-1 ring-1 ring-black/[0.04]">
+												{book.available_copies} / {book.total_copies} copies
+											</span>
 										{/if}
-									</td>
-									<td class="px-6 py-4 text-gray-500">{book.serial_no}</td>
-									<td class="px-6 py-4 text-gray-600">
-										{#if editingId === book.id}
-											<input
-												type="number"
-												bind:value={editCopies}
-												min="1"
-												class="w-20 rounded-xl border-0 bg-gray-50/80 px-3 py-2 text-xs ring-1 ring-black/[0.06] transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] outline-none focus:bg-white focus:ring-2 focus:ring-[#1B6B3A]/30"
-											/>
-										{:else}
-											{book.available_copies} / {book.total_copies}
-										{/if}
-									</td>
-									<td class="px-6 py-4">
-										<span
-											class={`rounded-full px-3 py-1 text-xs font-medium ring-1 ${book.available_copies > 0 ? 'bg-green-50 text-green-700 ring-green-100' : 'bg-red-50 text-red-600 ring-red-100'}`}
-											>{book.available_copies > 0 ? 'Available' : 'All Borrowed'}</span
-										>
-									</td>
-									<td class="px-6 py-4 text-right">
-										<div class="flex justify-end gap-2">
-											{#if editingId === book.id}
-												<button
-													onclick={() => saveEdit(book.id)}
-													disabled={saving}
-													class="rounded-full bg-[#1B6B3A] px-4 py-2 text-xs font-semibold text-white transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-[#155A2F] active:scale-[0.98] disabled:opacity-50"
-													>{saving ? 'Saving…' : 'Save'}</button
+									</div>
+
+									{#if editingId === book.id}
+										<div class="grid gap-3 sm:grid-cols-2">
+											<div class="space-y-1.5">
+												<label
+													for={`mobile-category-${book.id}`}
+													class="text-xs font-semibold tracking-wide text-gray-500 uppercase"
+													>Category</label
 												>
-												<button
-													onclick={cancelEdit}
-													class="rounded-full bg-white px-4 py-2 text-xs font-medium text-gray-700 ring-1 ring-black/[0.08] transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-gray-50 hover:ring-black/[0.12] active:scale-[0.98]"
-													>Cancel</button
+												<select
+													id={`mobile-category-${book.id}`}
+													bind:value={editCategory}
+													class="w-full rounded-xl border-0 bg-white px-3 py-3 text-sm ring-1 ring-black/[0.06] transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] outline-none focus:bg-white focus:ring-2 focus:ring-[#1B6B3A]/30"
 												>
-											{:else}
-												<button
-													onclick={() => startEdit(book)}
-													class="rounded-full bg-white px-4 py-2 text-xs font-medium text-gray-700 ring-1 ring-black/[0.08] transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-gray-50 hover:ring-black/[0.12] active:scale-[0.98]"
-													>Edit</button
+													<option value="">None</option>
+													{#each GENRES as genre (genre)}
+														<option value={genre}>{genre}</option>
+													{/each}
+												</select>
+											</div>
+											<div class="space-y-1.5">
+												<label
+													for={`mobile-copies-${book.id}`}
+													class="text-xs font-semibold tracking-wide text-gray-500 uppercase"
+													>Copies</label
 												>
-												<button
-													onclick={() => deleteBook(book.id)}
-													disabled={deletingId === book.id}
-													class="rounded-full bg-red-50 px-4 py-2 text-xs font-medium text-red-600 ring-1 ring-red-100 transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-red-100 active:scale-[0.98] disabled:opacity-50"
-													>{deletingId === book.id ? 'Deleting…' : 'Delete'}</button
-												>
-											{/if}
+												<input
+													id={`mobile-copies-${book.id}`}
+													type="number"
+													bind:value={editCopies}
+													min="1"
+													class="w-full rounded-xl border-0 bg-white px-3 py-3 text-sm ring-1 ring-black/[0.06] transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] outline-none focus:bg-white focus:ring-2 focus:ring-[#1B6B3A]/30"
+												/>
+											</div>
 										</div>
-									</td>
+									{/if}
+								</div>
+
+								<div class="mt-4 flex flex-wrap justify-end gap-2">
+									{#if editingId === book.id}
+										<button
+											type="button"
+											onclick={() => saveEdit(book.id)}
+											disabled={saving}
+											class="rounded-full bg-[#1B6B3A] px-5 py-3 text-xs font-semibold text-white transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-[#155A2F] active:scale-[0.98] disabled:opacity-50"
+											>{saving ? 'Saving…' : 'Save'}</button
+										>
+										<button
+											type="button"
+											onclick={cancelEdit}
+											class="rounded-full bg-white px-5 py-3 text-xs font-medium text-gray-700 ring-1 ring-black/[0.08] transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-gray-50 hover:ring-black/[0.12] active:scale-[0.98]"
+											>Cancel</button
+										>
+									{:else}
+										<button
+											type="button"
+											onclick={() => startEdit(book)}
+											class="rounded-full bg-white px-5 py-3 text-xs font-medium text-gray-700 ring-1 ring-black/[0.08] transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-gray-50 hover:ring-black/[0.12] active:scale-[0.98]"
+											>Edit</button
+										>
+										<button
+											type="button"
+											onclick={() => deleteBook(book.id)}
+											disabled={deletingId === book.id}
+											class="rounded-full bg-red-50 px-5 py-3 text-xs font-medium text-red-600 ring-1 ring-red-100 transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-red-100 active:scale-[0.98] disabled:opacity-50"
+											>{deletingId === book.id ? 'Deleting…' : 'Delete'}</button
+										>
+									{/if}
+								</div>
+							</div>
+						{/each}
+					</div>
+
+					<div class="hidden overflow-x-auto md:block">
+						<table class="w-full text-sm text-gray-900">
+							<thead>
+								<tr class="border-b border-gray-100 bg-gray-50/50">
+									<th
+										class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
+										>Title</th
+									>
+									<th
+										class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
+										>Author</th
+									>
+									<th
+										class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
+										>Category</th
+									>
+									<th
+										class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
+										>Serial</th
+									>
+									<th
+										class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
+										>Copies</th
+									>
+									<th
+										class="px-6 py-4 text-left text-xs font-semibold tracking-wider text-gray-400 uppercase"
+										>Status</th
+									>
+									<th
+										class="px-6 py-4 text-right text-xs font-semibold tracking-wider text-gray-400 uppercase"
+										><span class="sr-only">Actions</span></th
+									>
 								</tr>
-							{/each}
-						</tbody>
-					</table>
+							</thead>
+							<tbody class="divide-y divide-gray-50">
+								{#each books as book (book.id)}
+									<tr class="transition-colors duration-200 hover:bg-gray-50/50">
+										<td class="px-6 py-4 font-semibold text-gray-900">{book.title}</td>
+										<td class="px-6 py-4 text-gray-600">{book.author}</td>
+										<td class="px-6 py-4 text-gray-500">
+											{#if editingId === book.id}
+												<select
+													aria-label={`Category for ${book.title}`}
+													bind:value={editCategory}
+													class="w-full rounded-xl border-0 bg-gray-50/80 px-3 py-2 text-xs ring-1 ring-black/[0.06] transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] outline-none focus:bg-white focus:ring-2 focus:ring-[#1B6B3A]/30"
+												>
+													<option value="">None</option>
+													{#each GENRES as genre (genre)}
+														<option value={genre}>{genre}</option>
+													{/each}
+												</select>
+											{:else}
+												{book.category ?? '—'}
+											{/if}
+										</td>
+										<td class="px-6 py-4 text-gray-500">{book.serial_no}</td>
+										<td class="px-6 py-4 text-gray-600">
+											{#if editingId === book.id}
+												<input
+													type="number"
+													aria-label={`Total copies for ${book.title}`}
+													bind:value={editCopies}
+													min="1"
+													class="w-20 rounded-xl border-0 bg-gray-50/80 px-3 py-2 text-xs ring-1 ring-black/[0.06] transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] outline-none focus:bg-white focus:ring-2 focus:ring-[#1B6B3A]/30"
+												/>
+											{:else}
+												{book.available_copies} / {book.total_copies}
+											{/if}
+										</td>
+										<td class="px-6 py-4">
+											<span
+												class={`rounded-full px-3 py-1 text-xs font-medium ring-1 ${book.available_copies > 0 ? 'bg-green-50 text-green-700 ring-green-100' : 'bg-red-50 text-red-600 ring-red-100'}`}
+												>{book.available_copies > 0 ? 'Available' : 'All Borrowed'}</span
+											>
+										</td>
+										<td class="px-6 py-4 text-right">
+											<div class="flex justify-end gap-2">
+												{#if editingId === book.id}
+													<button
+														type="button"
+														onclick={() => saveEdit(book.id)}
+														disabled={saving}
+														class="rounded-full bg-[#1B6B3A] px-4 py-2 text-xs font-semibold text-white transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-[#155A2F] active:scale-[0.98] disabled:opacity-50"
+														>{saving ? 'Saving…' : 'Save'}</button
+													>
+													<button
+														type="button"
+														onclick={cancelEdit}
+														class="rounded-full bg-white px-4 py-2 text-xs font-medium text-gray-700 ring-1 ring-black/[0.08] transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-gray-50 hover:ring-black/[0.12] active:scale-[0.98]"
+														>Cancel</button
+													>
+												{:else}
+													<button
+														type="button"
+														onclick={() => startEdit(book)}
+														class="rounded-full bg-white px-4 py-2 text-xs font-medium text-gray-700 ring-1 ring-black/[0.08] transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-gray-50 hover:ring-black/[0.12] active:scale-[0.98]"
+														>Edit</button
+													>
+													<button
+														type="button"
+														onclick={() => deleteBook(book.id)}
+														disabled={deletingId === book.id}
+														class="rounded-full bg-red-50 px-4 py-2 text-xs font-medium text-red-600 ring-1 ring-red-100 transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-red-100 active:scale-[0.98] disabled:opacity-50"
+														>{deletingId === book.id ? 'Deleting…' : 'Delete'}</button
+													>
+												{/if}
+											</div>
+										</td>
+									</tr>
+								{/each}
+							</tbody>
+						</table>
+					</div>
+
+					{#if totalBooks > PAGE_SIZE}
+						<div
+							class="flex flex-col gap-3 border-t border-gray-100 px-4 py-4 text-sm text-gray-500 sm:flex-row sm:items-center sm:justify-between sm:px-6"
+						>
+							<p>Showing {pageStart} to {pageEnd} of {totalBooks} books</p>
+							<div class="flex flex-wrap gap-2">
+								<button
+									type="button"
+									onclick={() => goToPage(page - 1)}
+									disabled={page === 1 || loading}
+									class="rounded-full bg-white px-4 py-2 text-xs font-medium text-gray-700 ring-1 ring-black/[0.08] transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-gray-50 hover:ring-black/[0.12] active:scale-[0.98] disabled:opacity-50"
+								>
+									Previous
+								</button>
+								<span
+									class="rounded-full bg-gray-50/80 px-4 py-2 text-xs font-medium text-gray-600 ring-1 ring-black/[0.06]"
+								>
+									Page {page} of {totalPages}
+								</span>
+								<button
+									type="button"
+									onclick={() => goToPage(page + 1)}
+									disabled={page === totalPages || loading}
+									class="rounded-full bg-white px-4 py-2 text-xs font-medium text-gray-700 ring-1 ring-black/[0.08] transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-gray-50 hover:ring-black/[0.12] active:scale-[0.98] disabled:opacity-50"
+								>
+									Next
+								</button>
+							</div>
+						</div>
+					{/if}
 				</div>
 			</div>
 		{/if}

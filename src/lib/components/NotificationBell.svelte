@@ -70,8 +70,16 @@
 			}
 		};
 
+		const handleEscape = (event: KeyboardEvent) => {
+			if (event.key === 'Escape') open = false;
+		};
+
 		document.addEventListener('click', handleClickOutside);
-		return () => document.removeEventListener('click', handleClickOutside);
+		document.addEventListener('keydown', handleEscape);
+		return () => {
+			document.removeEventListener('click', handleClickOutside);
+			document.removeEventListener('keydown', handleEscape);
+		};
 	});
 </script>
 
@@ -85,18 +93,26 @@
 		}}
 		class="relative flex h-11 w-11 items-center justify-center rounded-full bg-white/80 text-gray-700 ring-1 ring-black/[0.06] transition-all duration-300 hover:bg-white"
 		aria-label="Notifications"
+		aria-haspopup="dialog"
+		aria-expanded={open}
 	>
 		<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-5 w-5">
 			<path d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V10a6 6 0 1 0-12 0v4.2a2 2 0 0 1-.6 1.4L4 17h5" />
 			<path d="M10 17a2 2 0 0 0 4 0" />
 		</svg>
 		{#if unreadCount > 0}
-			<span class="absolute top-2 right-2 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white"></span>
+			<span class="absolute top-2 right-2 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-white"
+			></span>
 		{/if}
 	</button>
 
 	{#if open}
-		<div class="absolute right-0 z-50 mt-3 w-[22rem] rounded-[2rem] bg-white/70 p-1.5 shadow-[0_20px_60px_rgba(0,0,0,0.12)] ring-1 ring-black/[0.06] backdrop-blur-2xl sm:w-[25rem]">
+		<div
+			class="absolute right-0 z-50 mt-3 w-[22rem] rounded-[2rem] bg-white/70 p-1.5 shadow-[0_20px_60px_rgba(0,0,0,0.12)] ring-1 ring-black/[0.06] backdrop-blur-2xl sm:w-[25rem]"
+			role="dialog"
+			aria-modal="false"
+			aria-label="Notifications"
+		>
 			<div class="rounded-[calc(2rem-0.375rem)] bg-white/95 p-4 text-gray-900">
 				<div class="flex items-center justify-between gap-3 border-b border-black/5 px-2 pb-3">
 					<div>
@@ -115,29 +131,45 @@
 
 				<div class="mt-3 max-h-[24rem] space-y-2 overflow-y-auto pr-1">
 					{#if loading}
-						<div class="rounded-3xl bg-gray-50 px-4 py-8 text-center text-sm text-gray-500 ring-1 ring-black/[0.04]">
+						<div
+							class="rounded-3xl bg-gray-50 px-4 py-8 text-center text-sm text-gray-500 ring-1 ring-black/[0.04]"
+						>
 							Loading notifications…
 						</div>
 					{:else if notifications.length === 0}
-						<div class="rounded-3xl bg-gray-50 px-4 py-8 text-center text-sm text-gray-500 ring-1 ring-black/[0.04]">
+						<div
+							class="rounded-3xl bg-gray-50 px-4 py-8 text-center text-sm text-gray-500 ring-1 ring-black/[0.04]"
+						>
 							You’re all caught up.
 						</div>
 					{:else}
 						{#each notifications as notification (notification.id)}
-							<div class={`rounded-[1.5rem] px-4 py-3 ring-1 transition ${notification.read ? 'bg-gray-50/80 ring-black/[0.04]' : 'bg-[#FDF8E8]/60 ring-[#C5A832]/15'}`}>
+							<div
+								class={`rounded-[1.5rem] px-4 py-3 ring-1 transition ${notification.read ? 'bg-gray-50/80 ring-black/[0.04]' : 'bg-[#FDF8E8]/60 ring-[#C5A832]/15'}`}
+							>
 								<div class="flex items-start gap-3">
-									<span class={`mt-1.5 h-2.5 w-2.5 rounded-full ${typeStyles[notification.type].dot}`}></span>
+									<span
+										class={`mt-1.5 h-2.5 w-2.5 rounded-full ${typeStyles[notification.type].dot}`}
+									></span>
 									<div class="min-w-0 flex-1">
 										<div class="flex items-center justify-between gap-3">
-											<p class="truncate text-sm font-semibold tracking-tight">{notification.title}</p>
-											<span class="text-[11px] text-gray-400">{formatTimeAgo(notification.created_at)}</span>
+											<p class="truncate text-sm font-semibold tracking-tight">
+												{notification.title}
+											</p>
+											<span class="text-[11px] text-gray-400"
+												>{formatTimeAgo(notification.created_at)}</span
+											>
 										</div>
 										<p class="mt-1 text-sm leading-6 text-gray-500">{notification.message}</p>
 										<div class="mt-2 flex items-center gap-2">
-											<span class={`rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] ${notification.read ? 'bg-white text-gray-400 ring-1 ring-black/[0.05]' : 'bg-white text-gray-700 ring-1 ring-black/[0.05]'}`}>
+											<span
+												class={`rounded-full px-2.5 py-1 text-[10px] font-semibold tracking-[0.18em] uppercase ${notification.read ? 'bg-white text-gray-400 ring-1 ring-black/[0.05]' : 'bg-white text-gray-700 ring-1 ring-black/[0.05]'}`}
+											>
 												{notification.read ? 'Read' : 'New'}
 											</span>
-											<span class="text-[10px] font-semibold uppercase tracking-[0.18em] text-gray-400">
+											<span
+												class="text-[10px] font-semibold tracking-[0.18em] text-gray-400 uppercase"
+											>
 												{typeStyles[notification.type].label}
 											</span>
 										</div>
