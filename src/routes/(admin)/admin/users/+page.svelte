@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, onDestroy } from 'svelte';
 	import type { LayoutData } from '../../$types';
 
 	type AdminUser = { id: string; name: string; role: string; created_at: string };
@@ -14,6 +14,7 @@
 	let messageType = $state<'success' | 'error'>('success');
 	let searchQuery = $state('');
 	let roleFilter = $state('');
+	let refreshInterval: ReturnType<typeof setInterval> | undefined;
 
 	const currentUserId = $derived(layoutData.profile?.id);
 	const currentUserRole = $derived(layoutData.profile?.role);
@@ -43,10 +44,15 @@
 
 	onMount(() => {
 		loadUsers();
+		refreshInterval = setInterval(() => loadUsers(true), 30000);
 	});
 
-	async function loadUsers() {
-		loading = true;
+	onDestroy(() => {
+		if (refreshInterval) clearInterval(refreshInterval);
+	});
+
+	async function loadUsers(silent = false) {
+		if (!silent) loading = true;
 		message = '';
 
 		const res = await fetch('/api/users');

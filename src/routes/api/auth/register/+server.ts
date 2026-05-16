@@ -19,7 +19,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		return json({ message: 'Service role not configured.' }, { status: 500 });
 	}
 
-	const { error } = await serviceClient.auth.admin.createUser({
+	const { data: authData, error } = await serviceClient.auth.admin.createUser({
 		email,
 		password,
 		email_confirm: true,
@@ -28,6 +28,13 @@ export const POST: RequestHandler = async ({ request }) => {
 
 	if (error) {
 		return json({ message: error.message }, { status: 400 });
+	}
+
+	// Belt-and-suspenders: explicitly confirm email in case createUser didn't apply it
+	if (authData?.user?.id) {
+		await serviceClient.auth.admin
+			.updateUserById(authData.user.id, { email_confirm: true })
+			.catch(() => {});
 	}
 
 	return json({

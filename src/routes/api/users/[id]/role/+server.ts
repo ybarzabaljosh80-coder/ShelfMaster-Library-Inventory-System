@@ -45,16 +45,23 @@ export const POST: RequestHandler = async ({ params, request, locals }) => {
 		}
 	}
 	const serviceClient = createServiceRoleClient();
- if (!serviceClient) return json({ message: 'Service role not configured.' }, { status: 500 });
- 
- const { data, error } = await serviceClient
-     .from('profiles')
-     .update({ role })
-     .eq('id', params.id)
-     .select('id, name, role, created_at')
-     .single();
- 
- if (error) return json({ message: error.message }, { status: 500 });
- 
- return json(data);
+	if (!serviceClient) return json({ message: 'Service role not configured.' }, { status: 500 });
+
+	const { data, error } = await serviceClient
+		.from('profiles')
+		.update({ role })
+		.eq('id', params.id)
+		.select('id, name, role, created_at')
+		.single();
+
+	if (error) return json({ message: error.message }, { status: 500 });
+
+	// When approving a pending user, ensure their email is confirmed so they can log in
+	if (role !== 'pending') {
+		await serviceClient.auth.admin
+			.updateUserById(params.id, { email_confirm: true })
+			.catch(() => {});
+	}
+
+	return json(data);
 };
