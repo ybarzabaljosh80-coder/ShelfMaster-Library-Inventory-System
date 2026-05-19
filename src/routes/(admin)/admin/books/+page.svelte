@@ -283,7 +283,9 @@
 					Use the refined intake form to keep catalog entries consistent from the start.
 				</p>
 			</div>
-			<div class="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-6">
+			<div
+				class="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(12rem,1.2fr)_minmax(8rem,1fr)_minmax(10rem,1fr)]"
+			>
 				<div class="space-y-1.5 xl:col-span-1">
 					<label
 						for="book-title"
@@ -331,7 +333,7 @@
 					<select
 						id="book-category"
 						bind:value={category}
-						class="w-full rounded-xl border-0 bg-gray-50/80 px-4 py-3 text-sm ring-1 ring-black/[0.06] transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] outline-none focus:bg-white focus:ring-2 focus:ring-[#1B6B3A]/30"
+						class="w-full rounded-xl border-0 bg-gray-50/80 py-3 pr-10 pl-4 text-sm ring-1 ring-black/[0.06] transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] outline-none focus:bg-white focus:ring-2 focus:ring-[#1B6B3A]/30"
 					>
 						<option value="">Category (optional)</option>
 						{#each GENRES as genre (genre)}
@@ -615,9 +617,9 @@
 												{book.available_copies} / {book.total_copies}
 											{/if}
 										</td>
-										<td class="px-6 py-4">
+										<td class="px-6 py-4 whitespace-nowrap">
 											<span
-												class={`rounded-full px-3 py-1 text-xs font-medium ring-1 ${book.available_copies > 0 ? 'bg-green-50 text-green-700 ring-green-100' : 'bg-red-50 text-red-600 ring-red-100'}`}
+												class={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap ring-1 ${book.available_copies > 0 ? 'bg-green-50 text-green-700 ring-green-100' : 'bg-red-50 text-red-600 ring-red-100'}`}
 												>{book.available_copies > 0 ? 'Available' : 'All Borrowed'}</span
 											>
 										</td>

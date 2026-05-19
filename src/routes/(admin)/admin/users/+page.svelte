@@ -262,7 +262,7 @@
 											value={user.role}
 											onchange={(e) => changeRole(user, (e.target as HTMLSelectElement).value)}
 											disabled={updatingId === user.id}
-											class="rounded-xl border-0 bg-gray-50/80 px-3 py-2 text-xs ring-1 ring-black/[0.06] transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] outline-none focus:bg-white focus:ring-2 focus:ring-[#1B6B3A]/30 disabled:opacity-50"
+											class="min-w-32 rounded-xl border-0 bg-gray-50/80 px-4 py-2.5 text-sm ring-1 ring-black/[0.06] transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] outline-none focus:bg-white focus:ring-2 focus:ring-[#1B6B3A]/30 disabled:opacity-50"
 										>
 											{#each roles as role (role)}
 												<option value={role}>{role}</option>
