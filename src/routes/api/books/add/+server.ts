@@ -11,8 +11,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		.eq('id', locals.user.id)
 		.single();
 
-	const staffRoles = ['admin', 'staff', 'moderator'];
-	if (!profile || !staffRoles.includes(profile.role)) return json({ message: 'Forbidden' }, { status: 403 });
+	const adminRoles = ['admin', 'moderator'];
+	if (!profile || !adminRoles.includes(profile.role)) return json({ message: 'Forbidden' }, { status: 403 });
 
 	const { title, author, serial_no, category, total_copies } = await request.json();
 

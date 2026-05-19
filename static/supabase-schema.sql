@@ -7,7 +7,7 @@
 create table public.profiles (
   id         uuid references auth.users on delete cascade primary key,
   name       text not null,
-  role       text not null default 'pending' check (role in ('pending', 'user', 'staff', 'moderator', 'admin')),
+  role       text not null default 'pending' check (role in ('pending', 'user', 'moderator', 'admin')),
   created_at timestamptz default now() not null
 );
 
@@ -89,25 +89,25 @@ create policy "Authenticated users can view books"
   to authenticated
   using (true);
 
-create policy "Staff can insert books"
+create policy "Admins and moderators can insert books"
   on public.books for insert
   with check (exists (
-    select 1 from public.profiles where id = auth.uid() and role in ('admin', 'staff', 'moderator')
+    select 1 from public.profiles where id = auth.uid() and role in ('admin', 'moderator')
   ));
 
-create policy "Staff can delete books"
+create policy "Admins and moderators can delete books"
   on public.books for delete
   using (exists (
-    select 1 from public.profiles where id = auth.uid() and role in ('admin', 'staff', 'moderator')
+    select 1 from public.profiles where id = auth.uid() and role in ('admin', 'moderator')
   ));
 
-create policy "Staff can update books"
+create policy "Admins and moderators can update books"
   on public.books for update
   using (exists (
-    select 1 from public.profiles where id = auth.uid() and role in ('admin', 'staff', 'moderator')
+    select 1 from public.profiles where id = auth.uid() and role in ('admin', 'moderator')
   ))
   with check (exists (
-    select 1 from public.profiles where id = auth.uid() and role in ('admin', 'staff', 'moderator')
+    select 1 from public.profiles where id = auth.uid() and role in ('admin', 'moderator')
   ));
 
 -- borrow_records
@@ -232,10 +232,10 @@ create table public.reservations (
 
 alter table public.reservations enable row level security;
 create policy "Users can view own reservations" on public.reservations for select using (auth.uid() = user_id);
-create policy "Admins can view all reservations" on public.reservations for select using (exists (select 1 from public.profiles where id = auth.uid() and role in ('admin', 'staff', 'moderator')));
+create policy "Admins and moderators can view all reservations" on public.reservations for select using (exists (select 1 from public.profiles where id = auth.uid() and role in ('admin', 'moderator')));
 create policy "Users can insert own reservations" on public.reservations for insert with check (auth.uid() = user_id);
-create policy "Staff can update reservations" on public.reservations for update using (exists (select 1 from public.profiles where id = auth.uid() and role in ('admin', 'staff', 'moderator')));
-create policy "Staff can delete reservations" on public.reservations for delete using (exists (select 1 from public.profiles where id = auth.uid() and role in ('admin', 'staff', 'moderator')));
+create policy "Admins and moderators can update reservations" on public.reservations for update using (exists (select 1 from public.profiles where id = auth.uid() and role in ('admin', 'moderator')));
+create policy "Admins and moderators can delete reservations" on public.reservations for delete using (exists (select 1 from public.profiles where id = auth.uid() and role in ('admin', 'moderator')));
 
 create table public.notifications (
   id           uuid default gen_random_uuid() primary key,
@@ -251,5 +251,5 @@ create table public.notifications (
 alter table public.notifications enable row level security;
 create policy "Users can view own notifications" on public.notifications for select using (auth.uid() = user_id);
 create policy "Users can update own notifications" on public.notifications for update using (auth.uid() = user_id);
-create policy "Staff can insert notifications" on public.notifications for insert with check (exists (select 1 from public.profiles where id = auth.uid() and role in ('admin', 'staff', 'moderator')));
-create policy "Staff can delete notifications" on public.notifications for delete using (exists (select 1 from public.profiles where id = auth.uid() and role in ('admin', 'staff', 'moderator')));
+create policy "Admins and moderators can insert notifications" on public.notifications for insert with check (exists (select 1 from public.profiles where id = auth.uid() and role in ('admin', 'moderator')));
+create policy "Admins and moderators can delete notifications" on public.notifications for delete using (exists (select 1 from public.profiles where id = auth.uid() and role in ('admin', 'moderator')));

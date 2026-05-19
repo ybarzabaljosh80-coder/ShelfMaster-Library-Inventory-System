@@ -45,34 +45,39 @@ create policy "Admins can update books"
 drop policy if exists "System can update reservations" on public.reservations;
 drop policy if exists "System can delete reservations" on public.reservations;
 
-create policy "Staff can update reservations"
+drop policy if exists "Staff can update reservations" on public.reservations;
+drop policy if exists "Staff can delete reservations" on public.reservations;
+
+create policy "Admins and moderators can update reservations"
   on public.reservations for update
   using (exists (
-    select 1 from public.profiles where id = auth.uid() and role in ('admin', 'staff', 'moderator')
+    select 1 from public.profiles where id = auth.uid() and role in ('admin', 'moderator')
   ));
 
-create policy "Staff can delete reservations"
+create policy "Admins and moderators can delete reservations"
   on public.reservations for delete
   using (exists (
-    select 1 from public.profiles where id = auth.uid() and role in ('admin', 'staff', 'moderator')
+    select 1 from public.profiles where id = auth.uid() and role in ('admin', 'moderator')
   ));
 
 -- 5. Tighten RLS on notifications
---    Only staff should be able to insert/delete notifications server-side.
+--    Only admins and moderators should be able to insert/delete notifications server-side.
 
 drop policy if exists "System can insert notifications" on public.notifications;
 drop policy if exists "System can delete notifications" on public.notifications;
+drop policy if exists "Staff can insert notifications" on public.notifications;
+drop policy if exists "Staff can delete notifications" on public.notifications;
 
-create policy "Staff can insert notifications"
+create policy "Admins and moderators can insert notifications"
   on public.notifications for insert
   with check (exists (
-    select 1 from public.profiles where id = auth.uid() and role in ('admin', 'staff', 'moderator')
+    select 1 from public.profiles where id = auth.uid() and role in ('admin', 'moderator')
   ));
 
-create policy "Staff can delete notifications"
+create policy "Admins and moderators can delete notifications"
   on public.notifications for delete
   using (exists (
-    select 1 from public.profiles where id = auth.uid() and role in ('admin', 'staff', 'moderator')
+    select 1 from public.profiles where id = auth.uid() and role in ('admin', 'moderator')
   ));
 
 -- 6. One-time: confirm any existing users stuck with unconfirmed emails

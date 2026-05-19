@@ -116,7 +116,7 @@
 		</div>
 	{/if}
 
-	<nav class="relative z-50 mt-4 px-4" aria-label="Admin primary">
+	<nav class="sticky top-4 z-50 px-4" aria-label="Admin primary">
 		<div
 			class="mx-auto max-w-5xl rounded-[1.7rem] bg-white/75 px-4 py-3 shadow-[0_10px_30px_rgba(0,0,0,0.06)] ring-1 ring-black/[0.05] backdrop-blur-xl sm:px-6"
 		>

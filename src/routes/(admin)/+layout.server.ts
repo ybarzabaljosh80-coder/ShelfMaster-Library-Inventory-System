@@ -10,7 +10,7 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 		.eq('id', locals.user.id)
 		.single();
 
-	const adminRoles = ['admin', 'staff', 'moderator'];
+	const adminRoles = ['admin', 'moderator'];
 	if (!profile || !adminRoles.includes(profile.role)) throw redirect(302, '/dashboard');
 
 	return { profile };

@@ -31,13 +31,13 @@
 		return result;
 	});
 
-	const ROLES = ['user', 'staff', 'moderator', 'admin'];
+	const ROLES = ['user', 'moderator', 'admin'];
 
 	function availableRoles(targetUser: AdminUser): string[] {
 		if (currentUserRole === 'admin') return ROLES;
 		if (currentUserRole === 'moderator') {
 			if (targetUser.role === 'admin' || targetUser.role === 'moderator') return [];
-			return ['user', 'staff'];
+			return ['user'];
 		}
 		return [];
 	}
@@ -127,8 +127,6 @@
 				return 'bg-[#FDF8E8] text-[#C5A832] ring-[#C5A832]/15';
 			case 'moderator':
 				return 'bg-[#E8F5EC] text-[#1B6B3A] ring-[#1B6B3A]/10';
-			case 'staff':
-				return 'bg-[#E8F5EC] text-[#155A2F] ring-[#155A2F]/10';
 			case 'pending':
 				return 'bg-amber-50 text-amber-700 ring-amber-200';
 			default:
@@ -170,7 +168,6 @@
 					<option value="">All roles</option>
 					<option value="pending">Pending</option>
 					<option value="user">User</option>
-					<option value="staff">Staff</option>
 					<option value="moderator">Moderator</option>
 					<option value="admin">Admin</option>
 				</select>

@@ -10,8 +10,8 @@ export const PATCH: RequestHandler = async ({ params, request, locals }) => {
 		.eq('id', locals.user.id)
 		.single();
 
-	const staffRoles = ['admin', 'staff', 'moderator'];
-	if (!profile || !staffRoles.includes(profile.role)) return json({ message: 'Forbidden' }, { status: 403 });
+	const adminRoles = ['admin', 'moderator'];
+	if (!profile || !adminRoles.includes(profile.role)) return json({ message: 'Forbidden' }, { status: 403 });
 
 	const { total_copies, category } = await request.json();
 
@@ -51,8 +51,8 @@ export const DELETE: RequestHandler = async ({ params, locals }) => {
 		.eq('id', locals.user.id)
 		.single();
 
-	const staffRoles = ['admin', 'staff', 'moderator'];
-	if (!profile || !staffRoles.includes(profile.role)) return json({ message: 'Forbidden' }, { status: 403 });
+	const adminRoles = ['admin', 'moderator'];
+	if (!profile || !adminRoles.includes(profile.role)) return json({ message: 'Forbidden' }, { status: 403 });
 
 	// Check for active borrows
 	const { data: activeBorrows } = await locals.supabase

@@ -124,7 +124,7 @@ Important caution:
 Root routes:
 
 - `src/routes/+layout.svelte` loads global CSS, favicon, and `NavigationLoader`.
-- `src/routes/+page.server.ts` redirects unauthenticated users to `/login`; redirects `admin`, `staff`, and `moderator` roles to `/admin/dashboard`; redirects everyone else to `/dashboard`.
+- `src/routes/+page.server.ts` redirects unauthenticated users to `/login`; redirects `admin` and `moderator` roles to `/admin/dashboard`; redirects everyone else to `/dashboard`.
 - `src/routes/+error.svelte` renders friendly error pages.
 
 User route group:
@@ -139,7 +139,7 @@ User route group:
 
 Admin route group:
 
-- `src/routes/(admin)/+layout.server.ts` requires `locals.user`, loads the profile, and allows `admin`, `staff`, and `moderator`.
+- `src/routes/(admin)/+layout.server.ts` requires `locals.user`, loads the profile, and allows `admin` and `moderator`.
 - `src/routes/(admin)/+layout.svelte` renders admin navigation and conditionally shows Users only for `admin` and `moderator`.
 - `src/routes/(admin)/admin/dashboard/+page.server.ts` aggregates total books, books out, registered users, total borrows, active borrows, and overdue borrows.
 - `src/routes/(admin)/admin/dashboard/+page.svelte` renders stat cards.
@@ -151,16 +151,8 @@ Admin route group:
 Role model:
 
 - `user`: regular portal access.
-- `staff`: admin-panel access for books/borrows/reports, but not user management UI.
 - `moderator`: admin-panel access including user management, but cannot promote to `admin`/`moderator` or modify/remove admins/moderators.
 - `admin`: full admin-panel access.
-
-Known role redirect drift to verify before role-related edits:
-
-- Root redirect treats `admin`, `staff`, and `moderator` as admin-panel roles.
-- Admin layout guard also allows `admin`, `staff`, and `moderator`.
-- Login API currently redirects only exact `admin` to `/admin/dashboard`; `staff` and `moderator` fall through to `/dashboard`.
-- User layout currently redirects only exact `admin` to `/admin/dashboard`, not `staff` or `moderator`.
 
 ## API Endpoint Map
 
@@ -174,26 +166,26 @@ Authentication:
 Books:
 
 - `GET /api/books`: authenticated book search/list. Supports `q` across title/author/serial and `category` exact filter.
-- `POST /api/books/add`: staff/moderator/admin only. Adds title, author, serial, optional category, and copy count. Duplicate serial returns 409.
-- `PATCH /api/books/[id]`: staff/moderator/admin only. Updates total copies and category; adjusts available copies by total-copy diff.
-- `DELETE /api/books/[id]`: staff/moderator/admin only. Blocks deletion when active borrows exist.
-- `POST /api/books/import`: staff/moderator/admin only. Accepts uploaded Excel/CSV, fuzzy-matches columns, inserts new serials, and uses `add_book_copies` RPC for duplicate serials.
-- `GET /api/books/export`: staff/moderator/admin only. Returns `.xlsx` inventory export.
+- `POST /api/books/add`: admin/moderator only. Adds title, author, serial, optional category, and copy count. Duplicate serial returns 409.
+- `PATCH /api/books/[id]`: admin/moderator only. Updates total copies and category; adjusts available copies by total-copy diff.
+- `DELETE /api/books/[id]`: admin/moderator only. Blocks deletion when active borrows exist.
+- `POST /api/books/import`: admin/moderator only. Accepts uploaded Excel/CSV, fuzzy-matches columns, inserts new serials, and uses `add_book_copies` RPC for duplicate serials.
+- `GET /api/books/export`: admin/moderator only. Returns `.xlsx` inventory export.
 
 Borrows:
 
-- `GET /api/borrows`: staff/moderator/admin only. Lists borrow records with optional `user`, `book`, `from`, and `to` filters.
+- `GET /api/borrows`: admin/moderator only. Lists borrow records with optional `user`, `book`, `from`, and `to` filters.
 - `POST /api/borrows/borrow`: authenticated users. Enforces max 3 active borrows, no overdue borrows, no duplicate active borrow for same book, reservation readiness, and copy availability.
 - `POST /api/borrows/return`: current user only. Marks own borrow returned and calls reservation queue handling.
-- `POST /api/borrows/force-return`: staff/moderator/admin only. Marks a borrow returned with `force_returned` and `force_returned_by`, then calls reservation queue handling.
-- `GET /api/borrows/export`: staff/moderator/admin only. Returns `.xlsx` borrow export with optional date range.
+- `POST /api/borrows/force-return`: admin/moderator only. Marks a borrow returned with `force_returned` and `force_returned_by`, then calls reservation queue handling.
+- `GET /api/borrows/export`: admin/moderator only. Returns `.xlsx` borrow export with optional date range.
 
 Reservations:
 
 - `GET /api/reservations`: current user's active `waiting` and `ready` reservations.
 - `POST /api/reservations`: creates a reservation only for unavailable books, rejects duplicate active reservations and active borrows for the same book, assigns FIFO position.
 - `DELETE /api/reservations/[id]`: current user can cancel own active reservation. If cancelling `ready`, releases or promotes held copy; if cancelling `waiting`, recalculates queue positions.
-- `GET /api/reservations/admin`: staff/moderator/admin only. Lists all active reservations with profile/book joins.
+- `GET /api/reservations/admin`: admin/moderator only. Lists all active reservations with profile/book joins.
 
 Notifications:
 
@@ -205,11 +197,11 @@ Users:
 
 - `GET /api/users`: admin/moderator only. Lists profiles.
 - `DELETE /api/users/[id]`: admin/moderator only. Blocks self-deletion, blocks moderators from removing admins/moderators, and blocks deletion with active borrows.
-- `POST /api/users/[id]/role`: admin/moderator only. Valid roles: `user`, `staff`, `moderator`, `admin`. Uses service role and enforces moderator limits.
+- `POST /api/users/[id]/role`: admin/moderator only. Valid roles: `user`, `moderator`, `admin`. Uses service role and enforces moderator limits.
 
 Reports:
 
-- `GET /api/reports`: staff/moderator/admin only. Returns CSV borrow report with optional `from` and `to` filters.
+- `GET /api/reports`: admin/moderator only. Returns CSV borrow report with optional `from` and `to` filters.
 
 ## Shared Server Modules
 
@@ -244,7 +236,7 @@ Application interfaces live in `src/lib/types.ts`:
 
 Database schema expectations from code:
 
-- `profiles.role` supports `user`, `staff`, `moderator`, and `admin`.
+- `profiles.role` supports `pending`, `user`, `moderator`, and `admin`.
 - `books` supports `category`, `total_copies`, and `available_copies`.
 - `borrow_records` supports `due_date`, `force_returned`, and `force_returned_by`.
 - `reservations.status` supports `waiting`, `ready`, `fulfilled`, `cancelled`, and `expired`.
@@ -274,7 +266,7 @@ Borrowing:
 Returning:
 
 - Users can return only their own active borrow.
-- Staff/moderator/admin can force-return any active borrow.
+- Admins and moderators can force-return any active borrow.
 - Returning calls `handleReturnedBook`, which promotes the next reservation or increments available copies.
 
 Reservations:
@@ -295,7 +287,7 @@ Notifications:
 
 Roles and users:
 
-- Staff, moderators, and admins may access the admin layout.
+- Moderators and admins may access the admin layout.
 - Only admins and moderators manage users.
 - Moderators cannot assign `admin` or `moderator` roles.
 - Moderators cannot modify or remove admins or other moderators.
@@ -343,7 +335,7 @@ General patterns:
 - Return JSON with `json(...)` for API success/failure, except file downloads which return `new Response(...)` with content headers.
 - Check `locals.user` first for authenticated endpoints.
 - Re-fetch the caller's profile role before privileged operations.
-- Use `staffRoles = ['admin', 'staff', 'moderator']` for inventory/borrow/report admin-panel operations.
+- Use `adminRoles = ['admin', 'moderator']` for inventory/borrow/report admin-panel operations.
 - Use exact admin/moderator checks for user management.
 - Prefer explicit 401, 403, 400, 404, 409, and 500 responses matching existing style.
 
@@ -383,7 +375,7 @@ Follow ESLint config:
 Before editing:
 
 - Read the target route/component/server helper first.
-- Check whether the behavior is user-scoped, staff-scoped, moderator/admin-scoped, or service-role/system-scoped.
+- Check whether the behavior is user-scoped, moderator/admin-scoped, or service-role/system-scoped.
 - If changing DB fields, compare code expectations with `static/supabase-schema.sql` and update schema docs/migrations if needed.
 - Ignore `.svelte-kit/`; it is generated.
 
@@ -396,7 +388,7 @@ When changing borrow/reservation logic:
 When changing roles/auth:
 
 - Update root redirect, login redirect, user layout guard, admin layout guard, and user-management endpoints consistently.
-- Re-check `staff`, `moderator`, and `admin` separately; their permissions differ.
+- Re-check `user`, `moderator`, and `admin` separately; their permissions differ.
 - Never move service-role operations into browser code.
 
 When changing UI:

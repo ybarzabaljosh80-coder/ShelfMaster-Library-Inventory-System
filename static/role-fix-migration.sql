@@ -3,12 +3,11 @@
 -- Run this in Supabase SQL Editor
 --
 -- Hierarchy:
---   staff     → add/edit/delete books, view borrows
---   moderator → staff + approve/delete users
+--   moderator → manage books, borrows, reports, and users
 --   admin     → all
 --
 -- Fixes:
---   1. Books RLS now allows staff/moderator (not just admin)
+--   1. Books RLS now allows moderators (not just admin)
 --   2. All internal functions revoke public + authenticated access
 -- =============================================================
 
@@ -33,31 +32,34 @@ revoke execute on function public.handle_new_user() from anon, authenticated;
 revoke execute on function public.prepare_profile_delete() from anon, authenticated;
 
 -- ---------------------------------------------------------------
--- 3. Fix books RLS: staff and moderator can insert/update/delete
+-- 3. Fix books RLS: admins and moderators can insert/update/delete
 -- ---------------------------------------------------------------
 drop policy if exists "Admins can insert books" on public.books;
 drop policy if exists "Admins can delete books" on public.books;
 drop policy if exists "Admins can update books" on public.books;
+drop policy if exists "Staff can insert books" on public.books;
+drop policy if exists "Staff can delete books" on public.books;
+drop policy if exists "Staff can update books" on public.books;
 
-create policy "Staff can insert books"
+create policy "Admins and moderators can insert books"
   on public.books for insert
   with check (exists (
-    select 1 from public.profiles where id = auth.uid() and role in ('admin', 'staff', 'moderator')
+    select 1 from public.profiles where id = auth.uid() and role in ('admin', 'moderator')
   ));
 
-create policy "Staff can delete books"
+create policy "Admins and moderators can delete books"
   on public.books for delete
   using (exists (
-    select 1 from public.profiles where id = auth.uid() and role in ('admin', 'staff', 'moderator')
+    select 1 from public.profiles where id = auth.uid() and role in ('admin', 'moderator')
   ));
 
-create policy "Staff can update books"
+create policy "Admins and moderators can update books"
   on public.books for update
   using (exists (
-    select 1 from public.profiles where id = auth.uid() and role in ('admin', 'staff', 'moderator')
+    select 1 from public.profiles where id = auth.uid() and role in ('admin', 'moderator')
   ))
   with check (exists (
-    select 1 from public.profiles where id = auth.uid() and role in ('admin', 'staff', 'moderator')
+    select 1 from public.profiles where id = auth.uid() and role in ('admin', 'moderator')
   ));
 
 -- ---------------------------------------------------------------

@@ -74,7 +74,6 @@ bun run format     # Auto-format with Prettier
 | Role        | Access                                                             |
 | ----------- | ------------------------------------------------------------------ |
 | `user`      | Browse books, borrow (max 3), reserve, view own borrows            |
-| `staff`     | Same admin panel access as moderator (assigned by moderator/admin)  |
 | `moderator` | Admin panel — manage books, borrows, users (cannot promote to admin)|
 | `admin`     | Full access — all moderator abilities plus promote any role         |
 
@@ -189,7 +188,7 @@ src/
 
 | File | Description |
 | ---- | ----------- |
-| `(admin)/+layout.server.ts` | **Guard** — Requires authentication + admin/staff/moderator role. Passes profile to child routes. |
+| `(admin)/+layout.server.ts` | **Guard** — Requires authentication + admin/moderator role. Passes profile to child routes. |
 | `(admin)/+layout.svelte` | Admin shell — sidebar/topbar navigation (Dashboard, Books, Users, Borrows, Reports), notification bell, user badge, logout. |
 | `(admin)/admin/dashboard/+page.server.ts` | Loads aggregate stats: total books, books out, registered users, total/active/overdue borrows. |
 | `(admin)/admin/dashboard/+page.svelte` | Renders six stat cards from the loaded data. |
@@ -226,21 +225,21 @@ src/
 | Endpoint | Method | Auth | Description |
 | -------- | ------ | ---- | ----------- |
 | `/api/books` | `GET` | User+ | Search/list books with optional `q` and `category` query params. |
-| `/api/books/add` | `POST` | Staff+ | Add a new book (title, author, serial_no, category, copies). Rejects duplicate serials. |
-| `/api/books/[id]` | `PATCH` | Staff+ | Update book copies and category (auto-adjusts available copies). |
-| `/api/books/[id]` | `DELETE` | Staff+ | Delete a book (blocked if it has active borrows). |
-| `/api/books/import` | `POST` | Staff+ | Import books from uploaded Excel/CSV with fuzzy column matching. |
-| `/api/books/export` | `GET` | Staff+ | Export full book inventory as `.xlsx`. |
+| `/api/books/add` | `POST` | Admin/Mod | Add a new book (title, author, serial_no, category, copies). Rejects duplicate serials. |
+| `/api/books/[id]` | `PATCH` | Admin/Mod | Update book copies and category (auto-adjusts available copies). |
+| `/api/books/[id]` | `DELETE` | Admin/Mod | Delete a book (blocked if it has active borrows). |
+| `/api/books/import` | `POST` | Admin/Mod | Import books from uploaded Excel/CSV with fuzzy column matching. |
+| `/api/books/export` | `GET` | Admin/Mod | Export full book inventory as `.xlsx`. |
 
 ### Borrows (`api/borrows/`)
 
 | Endpoint | Method | Auth | Description |
 | -------- | ------ | ---- | ----------- |
-| `/api/borrows` | `GET` | Staff+ | List borrow records with filters (user, book, date range). |
+| `/api/borrows` | `GET` | Admin/Mod | List borrow records with filters (user, book, date range). |
 | `/api/borrows/borrow` | `POST` | User+ | Create a borrow — enforces max 3 active, no overdue books, checks availability & reservations, decrements copies. |
 | `/api/borrows/return` | `POST` | User+ | Self-return a borrowed book. Triggers reservation queue processing. |
-| `/api/borrows/force-return` | `POST` | Staff+ | Admin force-return with `force_returned` flag and staff ID recorded. |
-| `/api/borrows/export` | `GET` | Staff+ | Export borrow records as `.xlsx` with optional date range filter. |
+| `/api/borrows/force-return` | `POST` | Admin/Mod | Admin force-return with `force_returned` flag and operator ID recorded. |
+| `/api/borrows/export` | `GET` | Admin/Mod | Export borrow records as `.xlsx` with optional date range filter. |
 
 ### Reservations (`api/reservations/`)
 
@@ -249,7 +248,7 @@ src/
 | `/api/reservations` | `GET` | User+ | List current user's active reservations (waiting/ready). |
 | `/api/reservations` | `POST` | User+ | Create a reservation for an unavailable book, assigns queue position. |
 | `/api/reservations/[id]` | `DELETE` | User+ | Cancel own reservation. Releases held copy or recalculates queue. |
-| `/api/reservations/admin` | `GET` | Staff+ | List all active reservations across all users. |
+| `/api/reservations/admin` | `GET` | Admin/Mod | List all active reservations across all users. |
 
 ### Users (`api/users/`)
 
@@ -271,7 +270,7 @@ src/
 
 | Endpoint | Method | Auth | Description |
 | -------- | ------ | ---- | ----------- |
-| `/api/reports` | `GET` | Staff+ | Generate CSV borrow report with optional date range filter. |
+| `/api/reports` | `GET` | Admin/Mod | Generate CSV borrow report with optional date range filter. |
 
 ---
 

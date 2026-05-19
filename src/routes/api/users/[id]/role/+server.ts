@@ -2,7 +2,7 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { createServiceRoleClient } from '$lib/server/supabase'; 
 
-const VALID_ROLES = ['user', 'staff', 'moderator', 'admin'];
+const VALID_ROLES = ['user', 'moderator', 'admin'];
 
 export const POST: RequestHandler = async ({ params, request, locals }) => {
 	if (!locals.user) return json({ message: 'Unauthorized' }, { status: 401 });
@@ -27,7 +27,7 @@ export const POST: RequestHandler = async ({ params, request, locals }) => {
 		return json({ message: 'Invalid role.' }, { status: 400 });
 	}
 
-	// Moderators can only assign user/staff, not admin/moderator
+	// Moderators can only assign user, not admin/moderator
 	if (profile.role === 'moderator' && (role === 'admin' || role === 'moderator')) {
 		return json({ message: 'Moderators cannot promote to admin or moderator.' }, { status: 403 });
 	}

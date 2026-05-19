@@ -11,7 +11,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 		.single();
 
 	if (profile?.role !== 'pending') {
-		const adminRoles = ['admin', 'staff', 'moderator'];
+		const adminRoles = ['admin', 'moderator'];
 		throw redirect(302, adminRoles.includes(profile?.role ?? '') ? '/admin/dashboard' : '/dashboard');
 	}
 };
